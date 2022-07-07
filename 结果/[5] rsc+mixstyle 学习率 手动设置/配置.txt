@@ -1,0 +1,11 @@
+RSC的transforms
+epoch 50
+bc 64（128）
+学习率 
+	前24  0.01
+	25-30 0.001
+	30 以后 *0.98
+
+
+
+RSC的percent设置：self.pecent = 3.0 / 10 + (epoch / interval) / 10

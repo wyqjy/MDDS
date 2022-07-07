@@ -1,0 +1,4 @@
+使用的都是rsc的设置，epoch30
+bc=64(128)
+学习率变换也是rsc
+transforms 也是RSC的
