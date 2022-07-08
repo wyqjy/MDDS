@@ -7,7 +7,7 @@ D4=sketch
 
 for SEED in $(seq 0 0)
 do
-    for SETUP in $(seq 1 4)
+    for SETUP in $(seq 1 1)
     do
         if [ ${SETUP} == 1 ]; then
             S1=${D2}

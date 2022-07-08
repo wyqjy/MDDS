@@ -40,7 +40,7 @@ def get_args():
                         help="If set, it will limit the number of training samples")
     parser.add_argument("--limit_target", default=None, type=int,
                         help="If set, it will limit the number of testing samples")
-    parser.add_argument("--learning_rate", "-l", type=float, default=.01, help="Learning rate")
+    parser.add_argument("--learning_rate", "-l", type=float, default=.001, help="Learning rate")
     parser.add_argument("--epochs", "-e", type=int, default=80, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
     parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="resnet18")
@@ -137,9 +137,9 @@ class Trainer:
 
     def lr_Adjust(self, epoch):
 
-        if epoch==24:
+        if epoch==10:
             for params in self.optimizer.param_groups:
-                params['lr'] = 0.001
+                params['lr'] = 0.01
         # if epoch==13:
         #     for params in self.optimizer.param_groups:
         #         params['lr'] *= 0.1
@@ -182,7 +182,7 @@ class Trainer:
         localtime = time1.localtime(time1.time())
         time = time1.strftime('%Y%m%d-%H.%M.%S', time1.localtime(time1.time()))
         da = str(datetime.datetime.today())
-        filename = 'TXT/' + str(self.args.target) + '+RSC+mixstyle_lrmanu+epoch50' + '_'+ str(time) + '.txt'
+        filename = 'TXT/' + str(self.args.target) + '+RSC+mixstyle_lrmanu+epoch80' + '_'+ str(time) + '.txt'
         print(filename)
         file = open(filename, mode='w')
         file.write('best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'+'\n')
