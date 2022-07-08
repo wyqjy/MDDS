@@ -96,7 +96,7 @@ class ResNet(nn.Module):
             # print('========')  #表示没有进入RSC
             interval = 10
             if epoch % interval == 0:
-                self.pecent = 3.0 / 10 + (epoch / interval) / 10  #每过10个epoch就把操作样本的比例加上0.2 * 2.0
+                self.pecent = 1.0 / 10 + (epoch / interval) / 10  #每过10个epoch就把操作样本的比例加上0.2 * 2.0
 
             self.eval()  #不启用 BatchNormalization 和 Dropout，保证BN和dropout不发生变化，pytorch框架会自动把BN和Dropout固定住，不会取平均，而是用训练好的值，不然的话，一旦test的batch_size过小，很容易就会被BN层影响结果
             x_new = x.clone().detach()  #clone()返回值是一个中间变量，支持梯度回溯。detach()操作后tensor与原始的tensor共享数据内存，它改变后原始的数据也相应的改变

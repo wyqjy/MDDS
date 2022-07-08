@@ -41,7 +41,7 @@ def get_args():
     parser.add_argument("--limit_target", default=None, type=int,
                         help="If set, it will limit the number of testing samples")
     parser.add_argument("--learning_rate", "-l", type=float, default=.01, help="Learning rate")
-    parser.add_argument("--epochs", "-e", type=int, default=50, help="Number of epochs")  #默认20
+    parser.add_argument("--epochs", "-e", type=int, default=80, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
     parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="resnet18")
     parser.add_argument("--tf_logger", type=bool, default=True, help="If true will save tensorboard compatible logs")
@@ -136,12 +136,16 @@ class Trainer:
         return class_correct
 
     def lr_Adjust(self, epoch):
-        if epoch==15:
+
+        if epoch==24:
             for params in self.optimizer.param_groups:
-                params['lr'] = 0.1
-        if epoch>20:
+                params['lr'] = 0.001
+        # if epoch==13:
+        #     for params in self.optimizer.param_groups:
+        #         params['lr'] *= 0.1
+        if epoch>30:
             for params in self.optimizer.param_groups:
-                params['lr'] *= 0.99
+                params['lr'] *= 0.999
                 # if epoch==30:
                 #     params['lr'] = 0.001
                 # elif epoch<= 70:
@@ -194,8 +198,8 @@ class Trainer:
 
 def main():
     args = get_args()
-    args.source = ['art_painting', 'cartoon', 'sketch']
-    args.target = 'photo'
+    # args.source = ['art_painting', 'cartoon', 'sketch']
+    # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
     # args.source = ['art_painting', 'photo', 'sketch']
