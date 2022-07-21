@@ -41,7 +41,6 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-        self.mixstyle = mixstyle.MixStyle()
 
     def _make_layer(self, block, planes, blocks, stride=1):
         '''
@@ -83,11 +82,8 @@ class ResNet(nn.Module):
         x = self.maxpool(x)
 
         x = self.layer1(x)
-        x = self.mixstyle(x)
         x = self.layer2(x)
-        x = self.mixstyle(x)
         x = self.layer3(x)
-        x = self.mixstyle(x)
         x = self.layer4(x)
 
         '''RSC的核心部分'''
