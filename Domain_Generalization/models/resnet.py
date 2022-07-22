@@ -203,7 +203,9 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         if return_features:
-            return self.class_classifier(x), x
+            feature = self.avgpool(feature)
+            feature = feature.view(feature.size(0), -1)
+            return self.class_classifier(x), feature
         return self.class_classifier(x)
 
 

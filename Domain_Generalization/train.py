@@ -43,7 +43,7 @@ def get_args():
     parser.add_argument("--limit_target", default=None, type=int,
                         help="If set, it will limit the number of testing samples")
     parser.add_argument("--learning_rate", "-l", type=float, default=.001, help="Learning rate")
-    parser.add_argument("--epochs", "-e", type=int, default=80, help="Number of epochs")  #默认20
+    parser.add_argument("--epochs", "-e", type=int, default=50, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
     parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="resnet18")
     parser.add_argument("--tf_logger", type=bool, default=True, help="If true will save tensorboard compatible logs")
@@ -113,6 +113,8 @@ class CuMix:
 
     def get_mixup_sample_and_ratio(self, data_bc, epoch):
         self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
+        # if epoch>65:
+        #     self.mixup_beta = 0.1
         return self.get_sample_mixup(data_bc), self.get_ratio_mixup(data_bc)
 
     # Get mixed inputs/labels
@@ -159,6 +161,7 @@ class Trainer:
         criterion = nn.CrossEntropyLoss()
         self.model.train()
         print('-'*60)
+        print('----- beta:', CuMix_train.mixup_beta)
 
         for it, ((data, jig_l, class_l), d_idx) in enumerate(self.source_loader):
             data, jig_l, class_l, d_idx = data.to(self.device), jig_l.to(self.device), class_l.to(self.device), d_idx.to(self.device)
@@ -227,7 +230,7 @@ class Trainer:
 
     def lr_Adjust(self, epoch):
 
-        if epoch==10:
+        if epoch==88:
             for params in self.optimizer.param_groups:
                 params['lr'] = 0.01
         # if epoch==13:
@@ -279,7 +282,7 @@ class Trainer:
         localtime = time1.localtime(time1.time())
         time = time1.strftime('%Y%m%d-%H.%M.%S', time1.localtime(time1.time()))
         da = str(datetime.datetime.today())
-        filename = 'TXT/' + str(self.args.target) + '+RSC+CuMix_lrmanu+epoch80' + '_'+ str(time) + '.txt'
+        filename = 'TXT/' + str(self.args.target) + '+RSC+CuMix_+epoch50' + '_'+ str(time) + '.txt'
         print(filename)
         file = open(filename, mode='w')
         file.write('best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'+'\n')
@@ -299,8 +302,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    args.source = ['art_painting', 'photo', 'sketch']
-    args.target = 'cartoon'
+    # args.source = ['art_painting', 'photo', 'sketch']
+    # args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
