@@ -29,7 +29,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=16, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -279,7 +279,7 @@ class Trainer:
         localtime = time1.localtime(time1.time())
         time = time1.strftime('%Y%m%d-%H.%M.%S', time1.localtime(time1.time()))
         da = str(datetime.datetime.today())
-        filename = 'TXT/' + str(self.args.target) + '+RSC+mixstyle_lrmanu+epoch80' + '_'+ str(time) + '.txt'
+        filename = 'TXT/' + str(self.args.target) + '+RSC+CuMix_lrmanu+epoch80' + '_'+ str(time) + '.txt'
         print(filename)
         file = open(filename, mode='w')
         file.write('best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'+'\n')
