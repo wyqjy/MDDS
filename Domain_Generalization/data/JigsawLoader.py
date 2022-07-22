@@ -177,7 +177,7 @@ class JigsawTestDatasetMultiple(JigsawDataset):
 class JigsawNewDataset(data.Dataset):
     def __init__(self, names, labels, jig_classes=100, img_transformer=None, tile_transformer=None, patches=True,
                  bias_whole_image=None):
-        self.data_path = "data/PACS"
+        self.data_path = "../../Data/pacs/images"
 
         self.names = names      # name_train
         self.labels = labels    # labels_train

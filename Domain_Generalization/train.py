@@ -16,18 +16,20 @@ import datetime
 import time as time1
 import os
 
+import json
 # 新加一个 tensorboard
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter('./path/to/log')
 
-
+CE = nn.CrossEntropyLoss()
+RG = np.random.default_rng()
 
 def get_args():
     parser = argparse.ArgumentParser(description="Script to launch jigsaw training",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=16, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -55,6 +57,73 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     return parser.parse_args()
+
+
+# Standard mix
+def std_mix(x,indeces,ratio):
+    #print(x.size(),' ',ratio.size(),' ',indeces.size())
+
+    return ratio*x + (1.-ratio)*x[indeces]
+
+# CE on mixed labels, represented as vectors
+def manual_CE(predictions, labels):
+    loss = -torch.mean(torch.sum(labels * torch.log_softmax(predictions,dim=1),dim=1))
+    return loss
+
+class CuMix:
+    def __init__(self, configs, args):
+        self.mixup_w = configs['mixup_img_w']
+        self.mixup_feat_w = configs['mixup_feat_w']   # 特征级别的mixup的loss的权重比
+
+        self.max_beta = configs['mixup_beta']
+        self.mixup_beta = 0.0
+        self.mixup_step = configs['mixup_step']
+
+        self.step = configs['step']
+        # self.batch_size = configs['batch_size']
+        # self.lr = configs['lr']
+        # self.nesterov = configs['nesterov']
+        # self.decay = configs['weight_decay']
+        # self.freeze_bn = configs['freeze_bn']
+
+        # input_dim = configs['input_dim']
+        self.semantic_w = configs['semantic_w']
+
+        self.seen_classes = args.n_classes
+
+        self.mixup_criterion = manual_CE
+        self.device = "cuda"
+
+
+    # Create one hot labels
+    def create_one_hot(self, y):
+        y_onehot = torch.LongTensor(y.size(0), self.seen_classes).to(self.device) # .size(0)
+        y_onehot.zero_()
+        y_onehot.scatter_(1, y.view(-1, 1), 1)
+        return y_onehot
+
+    def get_sample_mixup(self, data_bc):
+        '''  目前先随机选  '''
+        return torch.randperm(data_bc.shape[0])
+
+    # Get ratio to perform mixup
+    def get_ratio_mixup(self, domains):
+        # print(domains.shape[0], ' ', self.mixup_beta)
+        return torch.from_numpy(RG.beta(self.mixup_beta, self.mixup_beta, size=domains.shape[0])).float()
+
+    def get_mixup_sample_and_ratio(self, data_bc, epoch):
+        self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
+        return self.get_sample_mixup(data_bc), self.get_ratio_mixup(data_bc)
+
+    # Get mixed inputs/labels
+    def get_mixed_input_labels(self, input, labels, indeces, ratios, dims=2):
+        if dims==4:
+            return std_mix(input, indeces, ratios.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)), std_mix(labels, indeces, ratios.unsqueeze(-1))
+        else:    # dims=2 表示传回的是两个东西， 一个是数据，一个是标签
+            return std_mix(input, indeces, ratios.unsqueeze(-1)), std_mix(labels, indeces, ratios.unsqueeze(-1))
+
+
+
 
 class Trainer:
     def __init__(self, args, device):
@@ -86,7 +155,7 @@ class Trainer:
 
         self.dec_lr = 0.99
 
-    def _do_epoch(self, epoch=None):
+    def _do_epoch(self, epoch=None, CuMix_train=None):
         criterion = nn.CrossEntropyLoss()
         self.model.train()
         print('-'*60)
@@ -99,10 +168,31 @@ class Trainer:
             data = torch.cat((data, data_flip))   #原先的数据和翻转的数据进行拼接
             class_l = torch.cat((class_l, class_l))  #原先的类别和翻转的类别进行拼接
 
-            class_logit = self.model(data, class_l, True, epoch)  #进行前向传播  forward   第三个参数True代表要进行RSC操作, 返回预测的类别
+            class_logit, features = self.model(data, class_l, True, epoch, True, forward_feature=False)  #进行前向传播  forward   第三个参数True代表要进行RSC操作, 返回预测的类别  是否返回特征
+
+
             class_loss = criterion(class_logit, class_l)  #计算交叉熵损失
             _, cls_pred = class_logit.max(dim=1)  #获取最大的预测类别
-            loss = class_loss
+
+            '''  ----------  CuMix   feature ----------'''
+            one_hot_labels = CuMix_train.create_one_hot(class_l)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
+            mix_ratios = mix_ratios.to(self.device)
+            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
+            mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
+
+            mixup_feature_loss = CuMix_train.mixup_criterion(mixup_features_predictions, mixup_labels)
+            loss = CuMix_train.semantic_w*class_loss + CuMix_train.mixup_feat_w*mixup_feature_loss
+
+            '''--------  CuMix  img --------'''
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
+            mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
+            mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
+            mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
+            loss = loss + CuMix_train.mixup_w*mixup_img_loss
+
+
+            # loss = class_loss
 
             loss.backward()
             self.optimizer.step()
@@ -157,6 +247,13 @@ class Trainer:
 
 
     def do_training(self):
+
+        CuMix_config_file = "configs/dg.json"
+        with open(CuMix_config_file) as json_file:
+            CuMix_configs = json.load(json_file)
+
+        CuMix_train = CuMix(CuMix_configs, self.args)
+
         self.logger = Logger(self.args, update_frequency=30)
         self.results = {"val": torch.zeros(self.args.epochs), "test": torch.zeros(self.args.epochs)}
         for self.current_epoch in range(self.args.epochs):
@@ -166,7 +263,7 @@ class Trainer:
             self.logger.new_epoch(self.scheduler.get_lr())
             for n, v in enumerate(self.scheduler.get_lr()):  #其实里面一直只有一个值
                 writer.add_scalar('Learning rate', v, self.current_epoch)  #画学习率的图
-            self._do_epoch(self.current_epoch)
+            self._do_epoch(self.current_epoch, CuMix_train)
 
         writer.close() #新加的
 
@@ -202,8 +299,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    # args.source = ['art_painting', 'photo', 'sketch']
-    # args.target = 'cartoon'
+    args.source = ['art_painting', 'photo', 'sketch']
+    args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------

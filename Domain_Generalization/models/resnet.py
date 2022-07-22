@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import random
 import math
 
-from models import mixstyle
 '''
 resnett 认为深层的网络可以提取出更加丰富的语义信息。随着网络的加深一般会让分辨率降低而让通道数增加
 resnet18 在第2,3,4,5个stage中，在每个stage中使用的基本模块数目是[2,2,2,2]
@@ -75,7 +74,10 @@ class ResNet(nn.Module):
     def is_patch_based(self):
         return False
 
-    def forward(self, x, gt=None, flag=None, epoch=None):
+    def forward(self, x, gt=None, flag=None, epoch=None, return_features=False, forward_feature=False):
+        if forward_feature:   #CuMix
+            return self.class_classifier(x)
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -85,6 +87,7 @@ class ResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
+        feature = x
 
         '''RSC的核心部分'''
         # flag = False
@@ -199,6 +202,8 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        if return_features:
+            return self.class_classifier(x), x
         return self.class_classifier(x)
 
 

@@ -1,3 +1,4 @@
+import os.path
 from time import time
 
 from os.path import join, dirname
@@ -17,7 +18,11 @@ class Logger():
         self._clean_epoch_stats()
         self.update_f = update_frequency
         folder, logname = self.get_name_from_args(args)   #获得存放的文件夹名称和具体文件名字
+
         log_path = join(_log_path, folder, logname)   #具体文件的绝对路径  这里没有判断文件是否存在，如果不存在生成的操作
+        print(log_path)
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
         if args.tf_logger:   #开启tensorboard compatible logs   Logger里的属性只是用在tf里的一些参数
             self.tf_logger = TFLogger(log_path)
             # print("Saving to %s" % log_path)
