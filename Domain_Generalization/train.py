@@ -256,6 +256,9 @@ class Trainer:
             CuMix_configs = json.load(json_file)
 
         CuMix_train = CuMix(CuMix_configs, self.args)
+        print(CuMix_train.semantic_w)
+        print(CuMix_train.mixup_feat_w)
+        print(CuMix_train.mixup_w)
 
         self.logger = Logger(self.args, update_frequency=30)
         self.results = {"val": torch.zeros(self.args.epochs), "test": torch.zeros(self.args.epochs)}

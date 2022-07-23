@@ -1,8 +1,8 @@
 {
   "epochs": 30,
   "iters_per_epoch": 100,
-  "mixup_img_w": 0.1,
-  "mixup_feat_w": 1.0,
+  "mixup_img_w": 0.0,
+  "mixup_feat_w": 0.5,
   "mixup_step": 10,
   "mixup_beta": 0.6,
   "step": 25,
