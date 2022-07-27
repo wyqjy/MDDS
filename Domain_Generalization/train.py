@@ -306,8 +306,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    args.source = ['art_painting', 'photo', 'sketch']
-    args.target = 'cartoon'
+    # args.source = ['art_painting', 'photo', 'sketch']
+    # args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------

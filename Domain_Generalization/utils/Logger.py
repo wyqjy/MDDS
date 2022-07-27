@@ -29,6 +29,8 @@ class Logger():
         else:
             self.tf_logger = None
         self.current_iter = 0
+        self.res = 0
+        self.mod = None
 
     def new_epoch(self, learning_rates):   #画学习率变化的
         self.current_epoch += 1
@@ -61,7 +63,7 @@ class Logger():
 
     def log_test(self, phase, accuracies, model, args):   # log test val
         if phase == "test":
-            self.save_model(model, accuracies, args)
+            self.save_model(model, accuracies["class"], args)
         print("Accuracies on %s: " % phase + ", ".join(["%s : %.2f" % (k, v * 100) for k, v in accuracies.items()]))
         if self.tf_logger:
             for k, v in accuracies.items(): self.tf_logger.scalar_summary("%s/acc_%s" % (phase, k), v, self.current_iter)
@@ -101,12 +103,17 @@ class Logger():
         name += "_%d" % int(time() % 1000)
         return folder_name, name
 
-    def save_model(model, acc=None, args=None):
+    def save_model(self, model, acc=None, args=None):
+
         model_dirs = join('output', args.target)
         if not os.path.exists(model_dirs):
             os.makedirs(model_dirs)
-        model_name = str(acc[0:8]) + "_resnet18.pth"
-        model_path = join(model_dirs, model_name)
-        print(model_path)
-        torch.save(model, model_path)
-        print("模型保存成功")
+        if acc>self.res:
+            self.res = acc
+            self.mod = model
+        if self.current_epoch == args.epochs:
+            model_name = str(self.res)[0:8] + "_resnet18.pth"
+            model_path = join(model_dirs, model_name)
+            print(model_path)
+            torch.save(self.mod, model_path)
+            # print("模型保存成功")
