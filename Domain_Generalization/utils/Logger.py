@@ -1,6 +1,6 @@
 import os.path
 from time import time
-
+import torch
 from os.path import join, dirname
 
 from .tf_logger import TFLogger
@@ -59,7 +59,9 @@ class Logger():
         self.epoch_stats = {}
         self.total = 0
 
-    def log_test(self, phase, accuracies):   # log test val
+    def log_test(self, phase, accuracies, model, args):   # log test val
+        if phase == "test":
+            self.save_model(model, accuracies, args)
         print("Accuracies on %s: " % phase + ", ".join(["%s : %.2f" % (k, v * 100) for k, v in accuracies.items()]))
         if self.tf_logger:
             for k, v in accuracies.items(): self.tf_logger.scalar_summary("%s/acc_%s" % (phase, k), v, self.current_iter)
@@ -98,3 +100,13 @@ class Logger():
             name += "_%s" % args.suffix
         name += "_%d" % int(time() % 1000)
         return folder_name, name
+
+    def save_model(model, acc=None, args=None):
+        model_dirs = join('output', args.target)
+        if not os.path.exists(model_dirs):
+            os.makedirs(model_dirs)
+        model_name = str(acc[0:8]) + "_resnet18.pth"
+        model_path = join(model_dirs, model_name)
+        print(model_path)
+        torch.save(model, model_path)
+        print("模型保存成功")

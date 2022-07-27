@@ -16,7 +16,6 @@ import datetime
 import time as time1
 import os
 
-from utils.output import save_model
 import json
 # 新加一个 tensorboard
 from torch.utils.tensorboard import SummaryWriter
@@ -214,8 +213,7 @@ class Trainer:
                 total = len(loader.dataset)
                 class_correct = self.do_test(loader)
                 class_acc = float(class_correct) / total
-                save_model(self.model, class_acc, self.args)   #保存模型
-                self.logger.log_test(phase, {"class": class_acc})
+                self.logger.log_test(phase, {"class": class_acc}, self.model, self.args)
                 self.results[phase][self.current_epoch] = class_acc
 
     def do_test(self, loader):  #返回有几个预测的准确   预测准确的个数
