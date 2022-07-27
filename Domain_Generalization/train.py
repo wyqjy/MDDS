@@ -16,6 +16,7 @@ import datetime
 import time as time1
 import os
 
+from utils.output import save_model
 import json
 # 新加一个 tensorboard
 from torch.utils.tensorboard import SummaryWriter
@@ -213,6 +214,7 @@ class Trainer:
                 total = len(loader.dataset)
                 class_correct = self.do_test(loader)
                 class_acc = float(class_correct) / total
+                save_model(self.model, class_acc, self.args)   #保存模型
                 self.logger.log_test(phase, {"class": class_acc})
                 self.results[phase][self.current_epoch] = class_acc
 
@@ -262,6 +264,7 @@ class Trainer:
 
         self.logger = Logger(self.args, update_frequency=30)
         self.results = {"val": torch.zeros(self.args.epochs), "test": torch.zeros(self.args.epochs)}
+
         for self.current_epoch in range(self.args.epochs):
             # print('-----',self.current_epoch)
             self.lr_Adjust(self.current_epoch)
@@ -305,8 +308,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    # args.source = ['art_painting', 'photo', 'sketch']
-    # args.target = 'cartoon'
+    args.source = ['art_painting', 'photo', 'sketch']
+    args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
