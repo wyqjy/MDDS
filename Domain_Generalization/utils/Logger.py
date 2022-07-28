@@ -2,7 +2,7 @@ import os.path
 from time import time
 import torch
 from os.path import join, dirname
-
+import copy
 from .tf_logger import TFLogger
 
 _log_path = join(dirname(__file__), '../logs')  #获取当前文件夹的绝对路径  再跳到上一层的logs文件夹下
@@ -108,9 +108,9 @@ class Logger():
         model_dirs = join('output', args.target)
         if not os.path.exists(model_dirs):
             os.makedirs(model_dirs)
-        if acc>self.res:
+        if acc > self.res:
             self.res = acc
-            self.mod = model
+            self.mod = copy.deepcopy(model)
         if self.current_epoch == args.epochs:
             model_name = str(self.res)[0:8] + "_resnet18.pth"
             model_path = join(model_dirs, model_name)

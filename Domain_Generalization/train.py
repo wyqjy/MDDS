@@ -16,6 +16,7 @@ import datetime
 import time as time1
 import os
 
+from os.path import join
 import json
 # 新加一个 tensorboard
 from torch.utils.tensorboard import SummaryWriter
@@ -250,13 +251,15 @@ class Trainer:
 
     def only_test(self):
         '''  用训练好的模型测试，不训练  '''
-        model_dir = "output/cartoon/0.801621_resnet18.pth"
+        print("Only Test")
+        model_dir = join("output", self.args.target, "0.956287_resnet18.pth")
         self.model = torch.load(model_dir)
-        total = len(self.target_loader)
+        total = len(self.target_loader.dataset)
         self.model.eval()
         with torch.no_grad():
             class_correct = self.do_test(self.target_loader)
             class_acc = float(class_correct) / total
+            print(class_acc,' ',total)
         print("Test on", self.args.target, " accury", str(class_acc*100))
 
     def do_training(self):
@@ -326,7 +329,10 @@ def main():
     torch.cuda.manual_seed(0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     trainer = Trainer(args, device)
-    trainer.do_training()
+    if not args.no_train:
+        trainer.do_training()
+    else:
+        trainer.only_test()
 
 
 if __name__ == "__main__":
