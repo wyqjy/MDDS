@@ -129,8 +129,8 @@ class Logger():
         '''
           保存日志训练文件
         '''
-        txt_name = "to_" + str(self.args.target)
+        txt_name = "to_" + str(self.args.target) + '.txt'
         txt_folder = self.folder
-        txt_path = join(txt_folder, txt_name)
+        txt_path = join(_log_path, txt_folder, txt_name)
         file = open(txt_path, mode='a+')
         file.write(record + '\n')

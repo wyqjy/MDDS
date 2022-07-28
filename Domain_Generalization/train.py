@@ -56,7 +56,7 @@ def get_args():
     parser.add_argument("--train_all", default=True, type=bool, help="If true, all network weights will be trained")
     parser.add_argument("--suffix", default="", help="Suffix for the logger")
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
-    parser.add_argument("--no_train", default=True, type=bool, help="only test")
+    parser.add_argument("--no_train", default=False, type=bool, help="only test")
 
     return parser.parse_args()
 
@@ -302,7 +302,9 @@ class Trainer:
         filename = 'TXT/' + str(self.args.target) + '+RSC+lr_manul+CuMix_+epoch80' + '_'+ str(time) + '.txt'
         print(filename)
         file = open(filename, mode='w')
-        file.write('best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'+'\n')
+        record_best_test = 'best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'
+        self.logger.record_logs(record_best_test)
+        file.write(record_best_test + '\n')
         file.write('Best val' + str(val_res.max)+'  '+'  local in'+str(idx_best+1)+'  corresponding test acc'+str(test_res[idx_best])+'\n\n')
         file.write('val acc\n'+str(val_res))
         file.write('\ntest acc\n'+str(test_res))
