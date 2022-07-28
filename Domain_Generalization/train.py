@@ -55,6 +55,7 @@ def get_args():
     parser.add_argument("--train_all", default=True, type=bool, help="If true, all network weights will be trained")
     parser.add_argument("--suffix", default="", help="Suffix for the logger")
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
+    parser.add_argument("--no_train", default=True, type=bool, help="only test")
 
     return parser.parse_args()
 
@@ -247,7 +248,16 @@ class Trainer:
                 #     params['lr'] *= self.dec_lr
                 #     self.dec_lr -= 0.015
 
-
+    def only_test(self):
+        '''  用训练好的模型测试，不训练  '''
+        model_dir = "output/cartoon/0.801621_resnet18.pth"
+        self.model = torch.load(model_dir)
+        total = len(self.target_loader)
+        self.model.eval()
+        with torch.no_grad():
+            class_correct = self.do_test(self.target_loader)
+            class_acc = float(class_correct) / total
+        print("Test on", self.args.target, " accury", str(class_acc*100))
 
     def do_training(self):
 
