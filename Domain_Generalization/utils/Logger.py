@@ -18,9 +18,9 @@ class Logger():
         self._clean_epoch_stats()
         self.update_f = update_frequency
         folder, logname = self.get_name_from_args(args)   #获得存放的文件夹名称和具体文件名字
-
+        self.folder = folder
         log_path = join(_log_path, folder, logname)   #具体文件的绝对路径  这里没有判断文件是否存在，如果不存在生成的操作
-        print(log_path)
+        # print(log_path)
         if not os.path.exists(log_path):
             os.makedirs(log_path)
         if args.tf_logger:   #开启tensorboard compatible logs   Logger里的属性只是用在tf里的一些参数
@@ -31,12 +31,15 @@ class Logger():
         self.current_iter = 0
         self.res = 0
         self.mod = None
+        self.args = args
 
     def new_epoch(self, learning_rates):   #画学习率变化的
         self.current_epoch += 1
         self.last_update = time()
         self.lrs = learning_rates
-        print("New epoch - lr: %s" % ", ".join([str(lr) for lr in self.lrs]))
+        record_new_epoch ="New epoch - lr: %s" % ", ".join([str(lr) for lr in self.lrs])
+        self.record_logs(record_new_epoch)      #记录新epoch的日志log
+        print(record_new_epoch)
         self._clean_epoch_stats()
         if self.tf_logger:
             for n, v in enumerate(self.lrs):
@@ -51,8 +54,10 @@ class Logger():
         self.total += total_samples
         acc_string = ", ".join(["%s : %.2f" % (k, 100 * (v / total_samples)) for k, v in samples_right.items()])
         if it % self.update_f == 0:
-            print("%d/%d of epoch %d/%d %s - acc %s [bs:%d]" % (it, iters, self.current_epoch, self.max_epochs, loss_string,
-                                                                acc_string, total_samples))
+            record_train_log = "%d/%d of epoch %d/%d %s - acc %s [bs:%d]" % (it, iters, self.current_epoch, self.max_epochs, loss_string,
+                                                                acc_string, total_samples)
+            self.record_logs(record_train_log)
+            print(record_train_log)
             # update tf log
             if self.tf_logger:
                 for k, v in losses.items(): self.tf_logger.scalar_summary("train/loss_%s" % k, v, self.current_iter)
@@ -64,7 +69,9 @@ class Logger():
     def log_test(self, phase, accuracies, model, args):   # log test val
         if phase == "test":
             self.save_model(model, accuracies["class"], args)
-        print("Accuracies on %s: " % phase + ", ".join(["%s : %.2f" % (k, v * 100) for k, v in accuracies.items()]))
+        record_test = "Accuracies on %s: " % phase + ", ".join(["%s : %.2f" % (k, v * 100) for k, v in accuracies.items()])
+        self.record_logs(record_test)
+        print(record_test)
         if self.tf_logger:
             for k, v in accuracies.items(): self.tf_logger.scalar_summary("%s/acc_%s" % (phase, k), v, self.current_iter)
 
@@ -82,7 +89,7 @@ class Logger():
         if args.folder_name:    #默认是test
             folder_name = join(args.folder_name, folder_name)   #在 源域to目标域前加了一层文件夹test
 
-        '''里面文件的名字'''
+        '''里面文件夹的名字'''
         name = "eps%d_bs%d_lr%g_class%d_jigWeight%g" % (args.epochs, args.batch_size, args.learning_rate, args.n_classes, 0.7)
         # if args.ooo_weight > 0:
         #     name += "_oooW%g" % args.ooo_weight
@@ -117,3 +124,13 @@ class Logger():
             print(model_path)
             torch.save(self.mod, model_path)
             # print("模型保存成功")
+
+    def record_logs(self, record):
+        '''
+          保存日志训练文件
+        '''
+        txt_name = "to_" + str(self.args.target)
+        txt_folder = self.folder
+        txt_path = join(txt_folder, txt_name)
+        file = open(txt_path, mode='a+')
+        file.write(record + '\n')
