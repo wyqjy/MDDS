@@ -125,6 +125,20 @@ class Logger():
             torch.save(self.mod, model_path)
             # print("模型保存成功")
 
+    def record_default(self, default):
+        '''
+        保存默认配置文件信息到日志中
+        '''
+        self.record_logs(record="\nArgs:")
+        for k, v in self.args.__dict__.items():
+            sen = str(k) + " : " + str(v)
+            self.record_logs(sen)
+        self.record_logs(record="\nCuMix")
+        for key, value in default.items():
+            senten = str(key) + " : " + str(value)
+            self.record_logs(senten)
+        self.record_logs(record="\n")
+
     def record_logs(self, record):
         '''
           保存日志训练文件

@@ -20,7 +20,7 @@ from os.path import join
 import json
 # 新加一个 tensorboard
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter('./path/to/log')
+# writer = SummaryWriter('./path/to/log')
 
 CE = nn.CrossEntropyLoss()
 RG = np.random.default_rng()
@@ -269,11 +269,12 @@ class Trainer:
             CuMix_configs = json.load(json_file)
 
         CuMix_train = CuMix(CuMix_configs, self.args)
-        print(CuMix_train.semantic_w)
-        print(CuMix_train.mixup_feat_w)
-        print(CuMix_train.mixup_w)
+        # print(CuMix_train.semantic_w)
+        # print(CuMix_train.mixup_feat_w)
+        # print(CuMix_train.mixup_w)
 
         self.logger = Logger(self.args, update_frequency=30)
+        self.logger.record_default(CuMix_configs)
         self.results = {"val": torch.zeros(self.args.epochs), "test": torch.zeros(self.args.epochs)}
 
         for self.current_epoch in range(self.args.epochs):
@@ -281,11 +282,11 @@ class Trainer:
             self.lr_Adjust(self.current_epoch)
             # self.scheduler.step()
             self.logger.new_epoch(self.scheduler.get_lr())
-            for n, v in enumerate(self.scheduler.get_lr()):  #其实里面一直只有一个值
-                writer.add_scalar('Learning rate', v, self.current_epoch)  #画学习率的图
+            # for n, v in enumerate(self.scheduler.get_lr()):  #其实里面一直只有一个值
+            #     writer.add_scalar('Learning rate', v, self.current_epoch)  #画学习率的图
             self._do_epoch(self.current_epoch, CuMix_train)
 
-        writer.close() #新加的
+        # writer.close() #新加的
 
         val_res = self.results["val"]
 
@@ -317,8 +318,8 @@ class Trainer:
 
 def main():
     args = get_args()
-    # args.source = ['art_painting', 'cartoon', 'sketch']
-    # args.target = 'photo'
+    args.source = ['art_painting', 'cartoon', 'sketch']
+    args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
     # args.source = ['art_painting', 'photo', 'sketch']
