@@ -67,7 +67,7 @@ def get_train_dataloader(args, patches):
     # tile_transformer = None
     # val_transform = transforms.get_ms_test_transform()
 
-    limit = args.limit_source  #限制训练样本
+    limit = args.limit_source  #限制训练样本领域数量
     for dname in dataset_list:
         # name_train, name_val, labels_train, labels_val = get_split_dataset_info(join(dirname(__file__), 'txt_lists', '%s_train.txt' % dname), args.val_size)
         name_train, labels_train = _dataset_info(join(dirname(__file__), 'correct_txt_lists', '%s_train_kfold.txt' % dname))

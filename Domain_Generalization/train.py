@@ -300,7 +300,10 @@ class Trainer:
         localtime = time1.localtime(time1.time())
         time = time1.strftime('%Y%m%d-%H.%M.%S', time1.localtime(time1.time()))
         da = str(datetime.datetime.today())
-        filename = 'TXT/' + str(self.args.target) + '+RSC+lr_manul+CuMix_+epoch80' + '_'+ str(time) + '.txt'
+        filefolder = "output/TXT"
+        if not (os.path.exists(filefolder)):
+            os.makedirs(filefolder)
+        filename = filefolder + '/' + str(self.args.target) + '+RSC+lr_manul+CuMix_+epoch80' + '_'+ str(time) + '.txt'
         print(filename)
         file = open(filename, mode='w')
         record_best_test = 'best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'

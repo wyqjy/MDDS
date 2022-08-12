@@ -5,7 +5,7 @@ from os.path import join, dirname
 import copy
 from .tf_logger import TFLogger
 
-_log_path = join(dirname(__file__), '../logs')  #获取当前文件夹的绝对路径  再跳到上一层的logs文件夹下
+_log_path = join(dirname(__file__), '../output/logs')  #获取当前文件夹的绝对路径  再跳到上一层的logs文件夹下
 
 
 # high level wrapper for tf_logger.TFLogger
@@ -112,7 +112,7 @@ class Logger():
 
     def save_model(self, model, acc=None, args=None):
 
-        model_dirs = join('output', args.target)
+        model_dirs = join('output/model', args.target)
         if not os.path.exists(model_dirs):
             os.makedirs(model_dirs)
         if acc > self.res:

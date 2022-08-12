@@ -53,7 +53,7 @@ class ConcatDataset(Dataset):
             sample_idx = idx   #第一个数据集 idx就是本身
         else:
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
-        return self.datasets[dataset_idx][sample_idx], dataset_idx    #返回样本，和第几个数据集的索引
+        return self.datasets[dataset_idx][sample_idx], dataset_idx    #返回样本，和第几个数据集的索引，即域标签
 
     @property      #函数前加上@property，使得该函数可直接调用，封装起来
     def cummulative_sizes(self):
