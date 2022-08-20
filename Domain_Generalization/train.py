@@ -30,7 +30,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=66, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -72,6 +72,16 @@ def manual_CE(predictions, labels):
     loss = -torch.mean(torch.sum(labels * torch.log_softmax(predictions,dim=1),dim=1))
     return loss
 
+def swap(xs, a, b):
+    xs[a], xs[b] = xs[b], xs[a]
+
+def derange(xs):
+    x_new = [] + xs
+    for a in range(1, len(x_new)):
+        b = RG.choice(range(0, a))
+        swap(x_new, a, b)
+    return x_new
+
 class CuMix:
     def __init__(self, configs, args):
         self.mixup_w = configs['mixup_img_w']
@@ -80,6 +90,7 @@ class CuMix:
         self.max_beta = configs['mixup_beta']
         self.mixup_beta = 0.0
         self.mixup_step = configs['mixup_step']
+        self.mixup_domain = 0
 
         self.step = configs['step']
         # self.batch_size = configs['batch_size']
@@ -104,9 +115,25 @@ class CuMix:
         y_onehot.scatter_(1, y.view(-1, 1), 1)
         return y_onehot
 
-    def get_sample_mixup(self, data_bc):
+    def get_sample_mixup(self, domains):
         '''  目前先随机选  '''
-        return torch.randperm(data_bc.shape[0])
+        # return torch.randperm(domains.shape[0])
+
+
+        doms = list(range(len(torch.unique(domains))))  # [0,1,2]    挑出独立不重复的元素
+        c = domains.size(0)
+        bs = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
+        bs = bs // 2
+        selected = derange(doms)  # 重新排列领域标号
+        permuted_across_dom = torch.cat([(torch.randperm(bs) + selected[i] * bs) for i in range(len(doms))])
+        permuted_within_dom = torch.cat([(torch.randperm(bs) + i * bs) for i in range(len(doms))])
+        ratio_within_dom = torch.from_numpy(RG.binomial(1, self.mixup_domain, size=domains.size(0)//2))
+        indeces = ratio_within_dom * permuted_within_dom + (1. - ratio_within_dom) * permuted_across_dom
+
+        indeces_la = indeces.add(domains.size(0)//2)
+        indeces = torch.cat((indeces, indeces_la))
+        return indeces.long()
+
 
     # Get ratio to perform mixup
     def get_ratio_mixup(self, domains):
@@ -115,6 +142,7 @@ class CuMix:
 
     def get_mixup_sample_and_ratio(self, data_bc, epoch):
         self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
+        self.mixup_domain = min(1.0, max((self.mixup_step * 2. - epoch) / self.mixup_step, 0.0))
         # if epoch>65:
         #     self.mixup_beta = 0.1
         return self.get_sample_mixup(data_bc), self.get_ratio_mixup(data_bc)
@@ -173,6 +201,7 @@ class Trainer:
             data_flip = torch.flip(data, (3,)).detach().clone()  #按照维度对输入进行翻转,类别保持不变
             data = torch.cat((data, data_flip))   #原先的数据和翻转的数据进行拼接
             class_l = torch.cat((class_l, class_l))  #原先的类别和翻转的类别进行拼接
+            d_idx = torch.cat((d_idx, d_idx))
 
             class_logit, features = self.model(data, class_l, True, epoch, True, forward_feature=False)  #进行前向传播  forward   第三个参数True代表要进行RSC操作, 返回预测的类别  是否返回特征
 
@@ -181,8 +210,11 @@ class Trainer:
             _, cls_pred = class_logit.max(dim=1)  #获取最大的预测类别
 
             '''  ----------  CuMix   feature ----------'''
+
+
+
             one_hot_labels = CuMix_train.create_one_hot(class_l)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 

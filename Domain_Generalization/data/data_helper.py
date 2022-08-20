@@ -9,6 +9,8 @@ from data import StandardDataset
 from data.concat_dataset import ConcatDataset
 from data.JigsawLoader import JigsawNewDataset, JigsawTestNewDataset, _dataset_info
 
+from data.definition_sampler import DistributedBalancedSampler
+
 from .transforms import transforms
 
 mnist = 'mnist'
@@ -83,7 +85,9 @@ def get_train_dataloader(args, patches):
                               patches=patches, jig_classes=30))
     dataset = ConcatDataset(datasets)
     val_dataset = ConcatDataset(val_datasets)
-    loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)  #默认下num_workers=4
+    balance_sampler = DistributedBalancedSampler(dataset, 3, 22)
+
+    loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, sampler=balance_sampler, pin_memory=True, drop_last=True)  #默认下num_workers=4
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=True, drop_last=False)
     return loader, val_loader
 
