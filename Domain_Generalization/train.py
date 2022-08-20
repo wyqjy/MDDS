@@ -185,6 +185,11 @@ class Trainer:
             mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
+
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
+            mix_ratios = mix_ratios.to(self.device)
+            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
 
             mixup_feature_loss = CuMix_train.mixup_criterion(mixup_features_predictions, mixup_labels)
@@ -322,8 +327,8 @@ class Trainer:
 
 def main():
     args = get_args()
-    args.source = ['art_painting', 'cartoon', 'sketch']
-    args.target = 'photo'
+    # args.source = ['art_painting', 'cartoon', 'sketch']
+    # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
     # args.source = ['art_painting', 'photo', 'sketch']
