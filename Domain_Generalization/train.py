@@ -157,6 +157,7 @@ class Trainer:
         else:
             self.target_id = None
 
+        torch.set_num_threads(4)
         self.dec_lr = 0.99
 
     def _do_epoch(self, epoch=None, CuMix_train=None):
