@@ -122,8 +122,8 @@ class CuMix:
 
         doms = list(range(len(torch.unique(domains))))  # [0,1,2]    挑出独立不重复的元素
         c = domains.size(0)
-        bs = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
-        bs = bs // 2
+        bs1 = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
+        bs = bs1 // 2
         selected = derange(doms)  # 重新排列领域标号
         permuted_across_dom = torch.cat([(torch.randperm(bs) + selected[i] * bs) for i in range(len(doms))])
         permuted_within_dom = torch.cat([(torch.randperm(bs) + i * bs) for i in range(len(doms))])
@@ -212,15 +212,11 @@ class Trainer:
             '''  ----------  CuMix   feature ----------'''
 
 
-
             one_hot_labels = CuMix_train.create_one_hot(class_l)
             mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
-            mix_ratios = mix_ratios.to(self.device)
-            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
 
@@ -228,7 +224,7 @@ class Trainer:
             loss = CuMix_train.semantic_w*class_loss + CuMix_train.mixup_feat_w*mixup_feature_loss
 
             '''--------  CuMix  img --------'''
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(data, epoch)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
             mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
             mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
             mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
@@ -361,8 +357,8 @@ def main():
     args = get_args()
     # args.source = ['art_painting', 'cartoon', 'sketch']
     # args.target = 'photo'
-    # args.source = ['art_painting', 'cartoon', 'photo']
-    # args.target = 'sketch'
+    args.source = ['art_painting', 'cartoon', 'photo']
+    args.target = 'sketch'
     # args.source = ['art_painting', 'photo', 'sketch']
     # args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
