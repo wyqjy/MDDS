@@ -44,7 +44,7 @@ def get_args():
     parser.add_argument("--limit_target", default=None, type=int,
                         help="If set, it will limit the number of testing samples")
     parser.add_argument("--learning_rate", "-l", type=float, default=.001, help="Learning rate")
-    parser.add_argument("--epochs", "-e", type=int, default=80, help="Number of epochs")  #默认20
+    parser.add_argument("--epochs", "-e", type=int, default=50, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
     parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="resnet18")
     parser.add_argument("--tf_logger", type=bool, default=True, help="If true will save tensorboard compatible logs")
@@ -269,12 +269,12 @@ class Trainer:
         if epoch==10:
             for params in self.optimizer.param_groups:
                 params['lr'] = 0.01
-        # if epoch==13:
-        #     for params in self.optimizer.param_groups:
-        #         params['lr'] *= 0.1
-        if epoch>30:
+        if epoch==25:
             for params in self.optimizer.param_groups:
-                params['lr'] *= 0.999
+                params['lr'] *= 0.1
+        if epoch>25:
+            for params in self.optimizer.param_groups:
+                params['lr'] *= 0.99
                 # if epoch==30:
                 #     params['lr'] = 0.001
                 # elif epoch<= 70:
@@ -293,7 +293,7 @@ class Trainer:
         with torch.no_grad():
             class_correct = self.do_test(self.target_loader)
             class_acc = float(class_correct) / total
-            print(class_acc,' ',total)
+            print(class_acc, ' ', total)
         print("Test on", self.args.target, " accury", str(class_acc*100))
 
     def do_training(self):
@@ -357,12 +357,12 @@ def main():
     args = get_args()
     # args.source = ['art_painting', 'cartoon', 'sketch']
     # args.target = 'photo'
-    args.source = ['art_painting', 'cartoon', 'photo']
-    args.target = 'sketch'
+    # args.source = ['art_painting', 'cartoon', 'photo']
+    # args.target = 'sketch'
     # args.source = ['art_painting', 'photo', 'sketch']
     # args.target = 'cartoon'
-    # args.source = ['photo', 'cartoon', 'sketch']
-    # args.target = 'art_painting'
+    args.source = ['photo', 'cartoon', 'sketch']
+    args.target = 'art_painting'
     # --------------------------------------------
     print("Target domain: {}".format(args.target))
     torch.manual_seed(0)

@@ -43,13 +43,25 @@ class DistributedBalancedSampler(torch.utils.data.sampler.Sampler):
         self.samples = torch.LongTensor(self._get_samples())
 
 
-
     def _sampling(self, d_idx, n):
         if self.indeces[d_idx] + n >= self.cumulative_sizes[d_idx]:  # 剩下的样本数量不够再分配一次的
             # 随机找n个
             self.indeces[d_idx] = self.indeces[d_idx] + n
             self.rep[d_idx] += n
             return random.sample(self.dict_domain[d_idx], n)
+            ''' 降低重复率后效果变差了 '''
+            # d = -1   # 找剩余样本最多的进行分配
+            # cha = 0
+            # for i in range(self.n_doms):
+            #     c = self.cumulative_sizes[i] - self.indeces[i]
+            #     if c > n and c > cha:
+            #         cha = c
+            #         d = i
+            # if d > -1:
+            #     d_idx = d
+            # else:   #每个域剩下的样本都不足以构成一组
+            #     self.rep[d_idx] += n
+            #     return random.sample(self.dict_domain[d_idx], n)
 
         self.indeces[d_idx] = self.indeces[d_idx] + n
         return self.dict_domain[d_idx][self.indeces[d_idx] - n : self.indeces[d_idx]]
@@ -62,7 +74,7 @@ class DistributedBalancedSampler(torch.utils.data.sampler.Sampler):
         while 1:
             for d in range(self.n_doms):    # 一个batch
                 sIdx += self._sampling(d, self.dbs)
-                if self.indeces[d] >= self.cumulative_sizes[d]:
+                if self.indeces[d] + self.dbs >= self.cumulative_sizes[d]:  # 不足构成一个batch
                     useless[d] = 1
             sum = 0
             for d in range(self.n_doms):
