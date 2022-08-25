@@ -30,7 +30,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=66, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -117,22 +117,22 @@ class CuMix:
 
     def get_sample_mixup(self, domains):
         '''  目前先随机选  '''
-        # return torch.randperm(domains.shape[0])
+        return torch.randperm(domains.shape[0])
 
 
-        doms = list(range(len(torch.unique(domains))))  # [0,1,2]    挑出独立不重复的元素
-        c = domains.size(0)
-        bs1 = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
-        bs = bs1 // 2
-        selected = derange(doms)  # 重新排列领域标号
-        permuted_across_dom = torch.cat([(torch.randperm(bs) + selected[i] * bs) for i in range(len(doms))])
-        permuted_within_dom = torch.cat([(torch.randperm(bs) + i * bs) for i in range(len(doms))])
-        ratio_within_dom = torch.from_numpy(RG.binomial(1, self.mixup_domain, size=domains.size(0)//2))
-        indeces = ratio_within_dom * permuted_within_dom + (1. - ratio_within_dom) * permuted_across_dom
-
-        indeces_la = indeces.add(domains.size(0)//2)
-        indeces = torch.cat((indeces, indeces_la))
-        return indeces.long()
+        # doms = list(range(len(torch.unique(domains))))  # [0,1,2]    挑出独立不重复的元素
+        # c = domains.size(0)
+        # bs1 = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
+        # bs = bs1 // 2
+        # selected = derange(doms)  # 重新排列领域标号
+        # permuted_across_dom = torch.cat([(torch.randperm(bs) + selected[i] * bs) for i in range(len(doms))])
+        # permuted_within_dom = torch.cat([(torch.randperm(bs) + i * bs) for i in range(len(doms))])
+        # ratio_within_dom = torch.from_numpy(RG.binomial(1, self.mixup_domain, size=domains.size(0)//2))
+        # indeces = ratio_within_dom * permuted_within_dom + (1. - ratio_within_dom) * permuted_across_dom
+        #
+        # indeces_la = indeces.add(domains.size(0)//2)
+        # indeces = torch.cat((indeces, indeces_la))
+        # return indeces.long()
 
 
     # Get ratio to perform mixup
@@ -209,6 +209,7 @@ class Trainer:
             class_loss = criterion(class_logit, class_l)  #计算交叉熵损失
             _, cls_pred = class_logit.max(dim=1)  #获取最大的预测类别
 
+
             '''  ----------  CuMix   feature ----------'''
 
 
@@ -224,11 +225,11 @@ class Trainer:
             loss = CuMix_train.semantic_w*class_loss + CuMix_train.mixup_feat_w*mixup_feature_loss
 
             '''--------  CuMix  img --------'''
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
-            mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
-            mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
-            mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
-            loss = loss + CuMix_train.mixup_w*mixup_img_loss
+            # mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            # mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
+            # mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
+            # mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
+            # loss = loss + CuMix_train.mixup_w*mixup_img_loss
 
 
             # loss = class_loss
@@ -361,8 +362,8 @@ def main():
     # args.target = 'sketch'
     # args.source = ['art_painting', 'photo', 'sketch']
     # args.target = 'cartoon'
-    args.source = ['photo', 'cartoon', 'sketch']
-    args.target = 'art_painting'
+    # args.source = ['photo', 'cartoon', 'sketch']
+    # args.target = 'art_painting'
     # --------------------------------------------
     print("Target domain: {}".format(args.target))
     torch.manual_seed(0)
