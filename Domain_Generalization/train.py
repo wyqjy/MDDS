@@ -218,6 +218,11 @@ class Trainer:
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
+            # 四样本
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            mix_ratios = mix_ratios.to(self.device)
+            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+
 
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
 
