@@ -230,11 +230,11 @@ class Trainer:
             loss = CuMix_train.semantic_w*class_loss + CuMix_train.mixup_feat_w*mixup_feature_loss
 
             '''--------  CuMix  img --------'''
-            # mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
-            # mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
-            # mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
-            # mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
-            # loss = loss + CuMix_train.mixup_w*mixup_img_loss
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
+            mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
+            mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
+            loss = loss + CuMix_train.mixup_w*mixup_img_loss
 
 
             # loss = class_loss
@@ -275,10 +275,13 @@ class Trainer:
         if epoch==10:
             for params in self.optimizer.param_groups:
                 params['lr'] = 0.01
-        if epoch==25:
+        # if epoch > 20 and epoch < 35:
+        #     for params in self.optimizer.param_groups:
+        #         params['lr'] *= 0.999
+        if epoch==30:
             for params in self.optimizer.param_groups:
-                params['lr'] *= 0.1
-        if epoch>25:
+                params['lr'] = 0.001
+        if epoch>30:
             for params in self.optimizer.param_groups:
                 params['lr'] *= 0.99
                 # if epoch==30:
