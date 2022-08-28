@@ -375,8 +375,8 @@ def main():
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
-    args.source = ['art', 'clipart', 'product']
-    args.target = 'real_world'
+    # args.source = ['art', 'clipart', 'product']
+    # args.target = 'real_world'
     # args.source = ['art', 'clipart', 'real_world']
     # args.target = 'product'
     # args.source = ['art', 'real_world', 'product']

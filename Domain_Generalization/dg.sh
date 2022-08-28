@@ -1,9 +1,20 @@
 
 
-D1=art_painting
-D2=cartoon
-D3=photo
-D4=sketch
+dataset=$1
+
+
+
+if [ ${DATASET} == pacs ]; then
+    D1=art_painting
+    D2=cartoon
+    D3=photo
+    D4=sketch
+elif [ ${DATASET} == officehome ]; then
+    D1=art
+    D2=clipart
+    D3=product
+    D4=real_world
+fi
 
 for SEED in $(seq 0 0)
 do
@@ -33,6 +44,7 @@ do
 
         python train.py \
         --source ${S1} ${S2} ${S3} \
-        --target ${T}
+        --target ${T} \
+        --dataset ${dataset}
     done
 done
