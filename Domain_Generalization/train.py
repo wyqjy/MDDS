@@ -30,7 +30,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=32, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -56,7 +56,9 @@ def get_args():
     parser.add_argument("--train_all", default=True, type=bool, help="If true, all network weights will be trained")
     parser.add_argument("--suffix", default="", help="Suffix for the logger")
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
+
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
+    parser.add_argument("--dataset", default='officehome', help="dataset")
 
     return parser.parse_args()
 
@@ -219,9 +221,9 @@ class Trainer:
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
             # 四样本
-            # mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
-            # mix_ratios = mix_ratios.to(self.device)
-            # mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            mix_ratios = mix_ratios.to(self.device)
+            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
 
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
@@ -373,10 +375,24 @@ def main():
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
+    args.source = ['art', 'clipart', 'product']
+    args.target = 'real_world'
+    # args.source = ['art', 'clipart', 'real_world']
+    # args.target = 'product'
+    # args.source = ['art', 'real_world', 'product']
+    # args.target = 'clipart'
+    # args.source = ['real_world', 'clipart', 'product']
+    # args.target = 'art'
+
     print("Target domain: {}".format(args.target))
     torch.manual_seed(0)
     torch.cuda.manual_seed(0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if args.dataset=='pacs':
+        args.n_classes = 7
+    elif args.dataset=='officehome':
+        args.n_classes = 65
+
     trainer = Trainer(args, device)
     if not args.no_train:
         trainer.do_training()

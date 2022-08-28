@@ -175,9 +175,12 @@ class JigsawTestDatasetMultiple(JigsawDataset):
 
 #相比JiGen  新加的
 class JigsawNewDataset(data.Dataset):
-    def __init__(self, names, labels, jig_classes=100, img_transformer=None, tile_transformer=None, patches=True,
+    def __init__(self, args, names, labels, jig_classes=100, img_transformer=None, tile_transformer=None, patches=True,
                  bias_whole_image=None):
-        self.data_path = "../../Data/pacs/images"
+        if args.dataset == 'pacs':
+            self.data_path = "../../Data/pacs/images"
+        elif args.dataset == 'officehome':
+            self.data_path = "../../Data/office_home_dg"
 
         self.names = names      # name_train
         self.labels = labels    # labels_train
