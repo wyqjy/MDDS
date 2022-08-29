@@ -1,6 +1,6 @@
+#!/bin/bash
 
-
-dataset=$1
+DATASET=$1
 
 
 
@@ -45,6 +45,6 @@ do
         python train.py \
         --source ${S1} ${S2} ${S3} \
         --target ${T} \
-        --dataset ${dataset}
+        --dataset ${DATASET}
     done
 done

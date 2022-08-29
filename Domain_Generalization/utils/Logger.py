@@ -5,7 +5,7 @@ from os.path import join, dirname
 import copy
 from .tf_logger import TFLogger
 
-_log_path = join(dirname(__file__), '../output/logs')  #获取当前文件夹的绝对路径  再跳到上一层的logs文件夹下
+_log_path = join(dirname(__file__), '../output')  #获取当前文件夹的绝对路径  再跳到上一层的logs文件夹下
 
 
 # high level wrapper for tf_logger.TFLogger
@@ -19,7 +19,7 @@ class Logger():
         self.update_f = update_frequency
         folder, logname = self.get_name_from_args(args)   #获得存放的文件夹名称和具体文件名字
         self.folder = folder
-        log_path = join(_log_path, folder, logname)   #具体文件的绝对路径  这里没有判断文件是否存在，如果不存在生成的操作
+        log_path = join(_log_path, str(args.dataset), 'logs', folder, logname)   #具体文件的绝对路径  这里没有判断文件是否存在，如果不存在生成的操作
         # print(log_path)
         if not os.path.exists(log_path):
             os.makedirs(log_path)
@@ -112,7 +112,7 @@ class Logger():
 
     def save_model(self, model, acc=None, args=None):
 
-        model_dirs = join('output/model', args.target)
+        model_dirs = join('output/', self.args.dataset, 'model', args.target)
         if not os.path.exists(model_dirs):
             os.makedirs(model_dirs)
         if acc > self.res:
@@ -145,6 +145,6 @@ class Logger():
         '''
         txt_name = "to_" + str(self.args.target) + '.txt'
         txt_folder = self.folder
-        txt_path = join(_log_path, txt_folder, txt_name)
+        txt_path = join(_log_path, str(self.args.dataset), 'logs', txt_folder, txt_name)
         file = open(txt_path, mode='a+')
         file.write(record + '\n')

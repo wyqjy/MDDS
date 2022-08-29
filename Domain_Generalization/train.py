@@ -30,7 +30,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=32, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -58,7 +58,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='officehome', help="dataset")
+    parser.add_argument("--dataset", default='pacs', help="dataset")
 
     return parser.parse_args()
 
@@ -345,7 +345,7 @@ class Trainer:
         localtime = time1.localtime(time1.time())
         time = time1.strftime('%Y%m%d-%H.%M.%S', time1.localtime(time1.time()))
         da = str(datetime.datetime.today())
-        filefolder = "output/TXT"
+        filefolder = "output/TXT/" + str(self.args.dataset)
         if not (os.path.exists(filefolder)):
             os.makedirs(filefolder)
         filename = filefolder + '/' + str(self.args.target) + '+RSC+lr_manul+CuMix_+epoch80' + '_'+ str(time) + '.txt'
