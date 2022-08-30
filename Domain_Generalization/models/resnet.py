@@ -90,7 +90,7 @@ class ResNet(nn.Module):
         feature = x
 
         '''RSC的核心部分'''
-        flag = False
+
         if flag:
             # print('========')  #表示没有进入RSC
             interval = 10
@@ -206,9 +206,9 @@ class ResNet(nn.Module):
             feature = self.avgpool(feature)
             feature = feature.view(feature.size(0), -1)
             # feature = x
-            # if random.random() > 0.5:    # 以0.5的概率返回原始特征还是操作后的rsc特征
-            #     return self.class_classifier(x), x
-            return self.class_classifier(x), feature
+            if random.random() > 0.5:    # 以0.5的概率返回原始特征还是操作后的rsc特征
+                return self.class_classifier(feature), x
+            return self.class_classifier(feature), feature
         return self.class_classifier(x)
 
 
