@@ -18,6 +18,8 @@ import os
 
 from os.path import join
 import json
+
+from distance.max_select import max_distance_select
 # 新加一个 tensorboard
 from torch.utils.tensorboard import SummaryWriter
 # writer = SummaryWriter('./path/to/log')
@@ -30,7 +32,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=16, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -117,11 +119,24 @@ class CuMix:
         y_onehot.scatter_(1, y.view(-1, 1), 1)
         return y_onehot
 
-    def get_sample_mixup(self, domains):
+    def get_sample_mixup(self, domains, max_dis_index):
         '''  目前先随机选  '''
-        return torch.randperm(domains.shape[0])
+        # res = torch.randperm(domains.shape[0])
+        # print(res)
+        # return res
+
+        min_group = int(domains.shape[0]/8)
+
+        index = torch.IntTensor()
+        for i in range(8):
+            min_index = torch.randperm(int(min_group))
+            index = torch.cat((index, min_index+max_dis_index[i]*int(min_group)), dim=0)
+        # print(index)
+        return index
 
 
+
+        ''' 每个batch里都有相等的域样本数 不好用'''
         # doms = list(range(len(torch.unique(domains))))  # [0,1,2]    挑出独立不重复的元素
         # c = domains.size(0)
         # bs1 = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
@@ -142,12 +157,12 @@ class CuMix:
         # print(domains.shape[0], ' ', self.mixup_beta)
         return torch.from_numpy(RG.beta(self.mixup_beta, self.mixup_beta, size=domains.shape[0])).float()
 
-    def get_mixup_sample_and_ratio(self, data_bc, epoch):
+    def get_mixup_sample_and_ratio(self, data_bc, epoch, max_dis_index):
         self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
         self.mixup_domain = min(1.0, max((self.mixup_step * 2. - epoch) / self.mixup_step, 0.0))
         # if epoch>65:
         #     self.mixup_beta = 0.1
-        return self.get_sample_mixup(data_bc), self.get_ratio_mixup(data_bc)
+        return self.get_sample_mixup(data_bc, max_dis_index=max_dis_index), self.get_ratio_mixup(data_bc)
 
     # Get mixed inputs/labels
     def get_mixed_input_labels(self, input, labels, indeces, ratios, dims=2):
@@ -156,16 +171,6 @@ class CuMix:
         else:    # dims=2 表示传回的是两个东西， 一个是数据，一个是标签
             return std_mix(input, indeces, ratios.unsqueeze(-1)), std_mix(labels, indeces, ratios.unsqueeze(-1))
 
-''' 将特征归一化到[0,1]'''
-def data_normal(feature):
-    d_min = feature.min()
-    if d_min < 0:
-        feature += torch.abs(d_min)
-        d_min = feature.min()
-    d_max = feature.max()
-    dst = d_max - d_min
-    normal_data = (feature - d_min).true_divide(dst)
-    return normal_data
 
 
 class Trainer:
@@ -222,32 +227,20 @@ class Trainer:
 
 
 
-            '''    ---------- 计算MMD ----------------   '''
-            '''
-                注意 在features里有大于1的数值，要处理一下
-            '''
-            from distance.MMD import mmd_rbf
-            mul_feature = features.clone().detach()
-            normal_features = data_normal(mul_feature)
 
-            chunk_features = torch.chunk(normal_features, 8, dim=0)
-            index = []
-            for i in range(7):
-                for j in range(i+1, 8):
-                    mmd = mmd_rbf(chunk_features[i], chunk_features[j])
-                    print(i, j, ' ', mmd)
-
-            print()
             '''  ----------  CuMix   feature ----------'''
 
+            max_dis_index = max_distance_select(features=features)
 
             one_hot_labels = CuMix_train.create_one_hot(class_l)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
+
             # 四样本
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            max_dis_index = max_distance_select(features=mixup_features)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
@@ -258,11 +251,11 @@ class Trainer:
             loss = CuMix_train.semantic_w*class_loss + CuMix_train.mixup_feat_w*mixup_feature_loss
 
             '''--------  CuMix  img --------'''
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
-            mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
-            mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
-            mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
-            loss = loss + CuMix_train.mixup_w*mixup_img_loss
+            # mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            # mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
+            # mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
+            # mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
+            # loss = loss + CuMix_train.mixup_w*mixup_img_loss
 
 
             # loss = class_loss

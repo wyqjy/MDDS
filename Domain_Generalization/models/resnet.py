@@ -90,7 +90,7 @@ class ResNet(nn.Module):
         feature = x
 
         '''RSC的核心部分'''
-
+        flag = False
         if flag:
             # print('========')  #表示没有进入RSC
             interval = 10
