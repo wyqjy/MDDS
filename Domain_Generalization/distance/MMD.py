@@ -81,28 +81,62 @@ def mmd_rbf(source, target, kernel_mul=2.0, kernel_num=5, fix_sigma=None):
     loss = torch.mean(XX + YY - XY - YX)
     return loss  # 因为一般都是n==m，所以L矩阵一般不加入计算
 
-import random
-import matplotlib
-import matplotlib.pyplot as plt
 
-SAMPLE_SIZE = 500
-buckets = 50
+if __name__ == "__main__":
+    import random
+    import matplotlib
+    import matplotlib.pyplot as plt
 
-#第一种分布：对数正态分布，得到一个中值为mu，标准差为sigma的正态分布。mu可以取任何值，sigma必须大于零。
-plt.subplot(1,2,1)
-plt.xlabel("random.lognormalvariate")
-mu = -0.6
-sigma = 0.15#将输出数据限制到0-1之间
-res1 = [random.lognormvariate(mu, sigma) for _ in xrange(1, SAMPLE_SIZE)]
-plt.hist(res1, buckets)
+    SAMPLE_SIZE = 500
+    buckets = 50
 
-#第二种分布：beta分布。参数的条件是alpha 和 beta 都要大于0， 返回值在0~1之间。
-plt.subplot(1,2,2)
-plt.xlabel("random.betavariate")
-alpha = 1
-beta = 10
-res2 = [random.betavariate(alpha, beta) for _ in xrange(1, SAMPLE_SIZE)]
-plt.hist(res2, buckets)
+    #第一种分布：对数正态分布，得到一个中值为mu，标准差为sigma的正态分布。mu可以取任何值，sigma必须大于零。
+    plt.subplot(1,2,1)
+    plt.xlabel("random.lognormalvariate")
+    mu = -0.6
+    sigma = 0.15#将输出数据限制到0-1之间
+    res1 = [random.lognormvariate(mu, sigma) for _ in xrange(1, SAMPLE_SIZE)]
+    plt.hist(res1, buckets)
 
-plt.savefig('data.jpg')
-plt.show()
+    #第二种分布：beta分布。参数的条件是alpha 和 beta 都要大于0， 返回值在0~1之间。
+    plt.subplot(1,2,2)
+    plt.xlabel("random.betavariate")
+    alpha = 1
+    beta = 10
+    res2 = [random.betavariate(alpha, beta) for _ in xrange(1, SAMPLE_SIZE)]
+    plt.hist(res2, buckets)
+
+    plt.savefig('data.jpg')
+    plt.show()
+
+    from torch.autograd import Variable
+
+    #参数值见上段代码
+    #分别从对数正态分布和beta分布取两组数据
+    # diff_1 = []
+    # for i in range(10):
+    #     diff_1.append([random.lognormvariate(mu, sigma) for _ in xrange(1, SAMPLE_SIZE)])
+    #
+    # diff_2 = []
+    # for i in range(10):
+    #     diff_2.append([random.betavariate(alpha, beta) for _ in xrange(1, SAMPLE_SIZE)])
+    #
+    # X = torch.Tensor(diff_1)
+    # Y = torch.Tensor(diff_2)
+    # X, Y = Variable(X), Variable(Y)
+    # print(mmd_rbf(X, Y))
+
+    import numpy as np
+
+    diff_1 = []
+    for i in range(10):
+        diff_1.append([np.random.random((2,3)) for _ in xrange(1, SAMPLE_SIZE)])
+
+    diff_2 = []
+    for i in range(10):
+        diff_2.append([np.random.random((2,3)) for _ in xrange(1, SAMPLE_SIZE)])
+
+    X = torch.Tensor(diff_1)
+    Y = torch.Tensor(diff_2)
+    X, Y = Variable(X), Variable(Y)
+    print(mmd_rbf(X, Y))

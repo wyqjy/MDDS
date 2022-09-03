@@ -30,7 +30,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=16, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -156,7 +156,16 @@ class CuMix:
         else:    # dims=2 表示传回的是两个东西， 一个是数据，一个是标签
             return std_mix(input, indeces, ratios.unsqueeze(-1)), std_mix(labels, indeces, ratios.unsqueeze(-1))
 
-
+''' 将特征归一化到[0,1]'''
+def data_normal(feature):
+    d_min = feature.min()
+    if d_min < 0:
+        feature += torch.abs(d_min)
+        d_min = feature.min()
+    d_max = feature.max()
+    dst = d_max - d_min
+    normal_data = (feature - d_min).true_divide(dst)
+    return normal_data
 
 
 class Trainer:
@@ -212,6 +221,23 @@ class Trainer:
             _, cls_pred = class_logit.max(dim=1)  #获取最大的预测类别
 
 
+
+            '''    ---------- 计算MMD ----------------   '''
+            '''
+                注意 在features里有大于1的数值，要处理一下
+            '''
+            from distance.MMD import mmd_rbf
+            mul_feature = features.clone().detach()
+            normal_features = data_normal(mul_feature)
+
+            chunk_features = torch.chunk(normal_features, 8, dim=0)
+            index = []
+            for i in range(7):
+                for j in range(i+1, 8):
+                    mmd = mmd_rbf(chunk_features[i], chunk_features[j])
+                    print(i, j, ' ', mmd)
+
+            print()
             '''  ----------  CuMix   feature ----------'''
 
 
@@ -370,8 +396,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    # args.source = ['art_painting', 'photo', 'sketch']
-    # args.target = 'cartoon'
+    args.source = ['art_painting', 'photo', 'sketch']
+    args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
