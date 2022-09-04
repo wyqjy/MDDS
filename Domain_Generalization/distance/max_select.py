@@ -29,18 +29,20 @@ def max_distance_select(features):
     mul_feature = features.clone().detach()
     normal_features = data_normal(mul_feature)
 
-    chunk_features = torch.chunk(normal_features, 8, dim=0)
+    group_nums = 8
+
+    chunk_features = torch.chunk(normal_features, group_nums, dim=0)
     index = []
-    for i in range(8):
+    for i in range(group_nums):
         p = 0
         max_mmd = 0
-        for j in range(8):
+        for j in range(group_nums):
             mmd = mmd_rbf(chunk_features[i], chunk_features[j])
-            if max_mmd < mmd:
+            if max_mmd < mmd and j not in index:
                 p = j
                 max_mmd = mmd
             # print(i, j, ' ', mmd)
-        index.append(p)  # p这里没做去重处理，意味着为每一小组选择的另一个小组有可能也被别人使用
+        index.append(p)
     # print(index)
     return index
 
