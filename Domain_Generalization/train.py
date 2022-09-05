@@ -125,10 +125,12 @@ class CuMix:
         # print(res)
         # return res
 
-        min_group = int(domains.shape[0]/8)
+        group_nums = 16
+
+        min_group = int(domains.shape[0]/group_nums)
 
         index = torch.IntTensor()
-        for i in range(8):
+        for i in range(group_nums):
             min_index = torch.randperm(int(min_group))
             index = torch.cat((index, min_index+max_dis_index[i]*int(min_group)), dim=0)
         # print(index)
