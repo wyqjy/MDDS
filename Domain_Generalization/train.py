@@ -125,7 +125,7 @@ class CuMix:
         # print(res)
         # return res
 
-        group_nums = 16
+        group_nums = 32
 
         min_group = int(domains.shape[0]/group_nums)
 
