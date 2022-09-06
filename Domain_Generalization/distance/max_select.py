@@ -29,7 +29,7 @@ def max_distance_select(features):
     mul_feature = features.clone().detach()
     normal_features = data_normal(mul_feature)
 
-    group_nums = 32
+    group_nums = 16
 
     chunk_features = torch.chunk(normal_features, group_nums, dim=0)
     index = []

@@ -125,7 +125,7 @@ class CuMix:
         # print(res)
         # return res
 
-        group_nums = 32
+        group_nums = 16
 
         min_group = int(domains.shape[0]/group_nums)
 
@@ -301,10 +301,10 @@ class Trainer:
         # if epoch > 20 and epoch < 35:
         #     for params in self.optimizer.param_groups:
         #         params['lr'] *= 0.999
-        if epoch==30:
+        if epoch==25:
             for params in self.optimizer.param_groups:
                 params['lr'] = 0.001
-        if epoch>30:
+        if epoch>25:
             for params in self.optimizer.param_groups:
                 params['lr'] *= 0.99
                 # if epoch==30:
