@@ -119,22 +119,21 @@ class CuMix:
         y_onehot.scatter_(1, y.view(-1, 1), 1)
         return y_onehot
 
-    def get_sample_mixup(self, domains, max_dis_index):
+    def get_sample_mixup(self, domains, max_dis_index=None):
         '''  目前先随机选  '''
-        # res = torch.randperm(domains.shape[0])
-        # print(res)
-        # return res
+        res = torch.randperm(domains.shape[0])
+        return res
 
-        group_nums = 16
-
-        min_group = int(domains.shape[0]/group_nums)
-
-        index = torch.IntTensor()
-        for i in range(group_nums):
-            min_index = torch.randperm(int(min_group))
-            index = torch.cat((index, min_index+max_dis_index[i]*int(min_group)), dim=0)
-        # print(index)
-        return index
+        # group_nums = 16
+        #
+        # min_group = int(domains.shape[0]/group_nums)
+        #
+        # index = torch.IntTensor()
+        # for i in range(group_nums):
+        #     min_index = torch.randperm(int(min_group))
+        #     index = torch.cat((index, min_index+max_dis_index[i]*int(min_group)), dim=0)
+        # # print(index)
+        # return index
 
 
 
@@ -159,7 +158,7 @@ class CuMix:
         # print(domains.shape[0], ' ', self.mixup_beta)
         return torch.from_numpy(RG.beta(self.mixup_beta, self.mixup_beta, size=domains.shape[0])).float()
 
-    def get_mixup_sample_and_ratio(self, data_bc, epoch, max_dis_index):
+    def get_mixup_sample_and_ratio(self, data_bc, epoch, max_dis_index=None):
         self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
         self.mixup_domain = min(1.0, max((self.mixup_step * 2. - epoch) / self.mixup_step, 0.0))
         # if epoch>65:
@@ -232,19 +231,19 @@ class Trainer:
 
             '''  ----------  CuMix   feature ----------'''
 
-            max_dis_index = max_distance_select(features=features)
+            #max_dis_index = max_distance_select(features=features)
 
             one_hot_labels = CuMix_train.create_one_hot(class_l)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, max_dis_index=max_dis_index)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)# , max_dis_index=max_dis_index
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
 
-            # 四样本
-            max_dis_index = max_distance_select(features=mixup_features)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, max_dis_index=max_dis_index)
-            mix_ratios = mix_ratios.to(self.device)
-            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+            # # 四样本
+            # max_dis_index = max_distance_select(features=mixup_features)
+            # mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, max_dis_index=max_dis_index)
+            # mix_ratios = mix_ratios.to(self.device)
+            # mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
 
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
@@ -301,10 +300,10 @@ class Trainer:
         # if epoch > 20 and epoch < 35:
         #     for params in self.optimizer.param_groups:
         #         params['lr'] *= 0.999
-        if epoch==25:
+        if epoch==30:
             for params in self.optimizer.param_groups:
                 params['lr'] = 0.001
-        if epoch>25:
+        if epoch>30:
             for params in self.optimizer.param_groups:
                 params['lr'] *= 0.99
                 # if epoch==30:
