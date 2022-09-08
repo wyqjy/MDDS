@@ -2,7 +2,7 @@
   "epochs": 30,
   "iters_per_epoch": 100,
   "mixup_img_w": 0,
-  "mixup_feat_w": 1.0,
+  "mixup_feat_w": 0.5,
   "mixup_step": 10,
   "mixup_beta": 0.6,
   "step": 25,
@@ -14,5 +14,5 @@
   "weight_decay":0.0001,
   "backbone":"resnet18",
 
-  "semantic_w": 0
+  "semantic_w": 1.0
 }
