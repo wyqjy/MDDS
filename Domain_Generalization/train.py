@@ -406,8 +406,9 @@ def main():
     # args.target = 'art'
 
     print("Target domain: {}".format(args.target))
-    torch.manual_seed(0)
-    torch.cuda.manual_seed(0)
+    seed = 0
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if args.dataset=='pacs':
         args.n_classes = 7
