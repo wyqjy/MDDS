@@ -61,7 +61,7 @@ def get_args():
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
     parser.add_argument("--dataset", default='pacs', help="dataset")
-    parser.add_argument("--seed", type=int, default=2, help="seed")
+    parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
 
