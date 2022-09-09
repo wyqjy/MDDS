@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DATASET=$1
-
+seed=$2
 
 
 if [ ${DATASET} == pacs ]; then
@@ -45,6 +45,7 @@ do
         python train.py \
         --source ${S1} ${S2} ${S3} \
         --target ${T} \
-        --dataset ${DATASET}
+        --dataset ${DATASET} \
+        --seed ${seed}
     done
 done

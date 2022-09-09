@@ -61,6 +61,7 @@ def get_args():
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
     parser.add_argument("--dataset", default='pacs', help="dataset")
+    parser.add_argument("--seed", type=int, default=2, help="seed")
 
     return parser.parse_args()
 
@@ -366,7 +367,7 @@ class Trainer:
         localtime = time1.localtime(time1.time())
         time = time1.strftime('%Y%m%d-%H.%M.%S', time1.localtime(time1.time()))
         da = str(datetime.datetime.today())
-        filefolder = "output/TXT/" + str(self.args.dataset)
+        filefolder = "output/" + str(self.args.dataset) + '/' + 'seed'+str(self.args.seed) + '/TXT'
         if not (os.path.exists(filefolder)):
             os.makedirs(filefolder)
         filename = filefolder + '/' + str(self.args.target) + '+RSC+lr_manul+CuMix_+epoch80' + '_'+ str(time) + '.txt'
@@ -406,7 +407,7 @@ def main():
     # args.target = 'art'
 
     print("Target domain: {}".format(args.target))
-    seed = 0
+    seed = args.seed
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
