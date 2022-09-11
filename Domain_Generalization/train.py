@@ -237,14 +237,14 @@ class Trainer:
             max_dis_index = max_distance_select(features=features)
 
             one_hot_labels = CuMix_train.create_one_hot(class_l)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=True, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
 
             # 四样本
             max_dis_index = max_distance_select(features=mixup_features)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=True, max_dis_index=max_dis_index)
+            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
