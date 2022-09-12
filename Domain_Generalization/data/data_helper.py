@@ -78,6 +78,8 @@ def get_train_dataloader(args, patches):
             txt_folder = 'correct_txt_lists'
         elif args.dataset == 'officehome':
             txt_folder = 'officehome_split'
+        elif args.dataset == 'vlcs':
+            txt_folder = 'vlcs_split'
         name_train, labels_train = _dataset_info(join(dirname(__file__), txt_folder, '%s_train_kfold.txt' % dname))
         name_val, labels_val = _dataset_info(join(dirname(__file__), txt_folder, '%s_crossval_kfold.txt' % dname))
 
@@ -103,6 +105,8 @@ def get_val_dataloader(args, patches=False):
         txt_folder = 'correct_txt_lists'
     elif args.dataset == 'officehome':
         txt_folder = 'officehome_split'
+    elif args.dataset == 'vlcs':
+        txt_folder = 'vlcs_split'
     names, labels = _dataset_info(join(dirname(__file__), txt_folder, '%s_test_kfold.txt' % args.target))
     img_tr = get_val_transformer(args)
     # img_tr = transforms.get_ms_test_transform()

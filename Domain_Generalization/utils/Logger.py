@@ -133,7 +133,7 @@ class Logger():
         for k, v in self.args.__dict__.items():
             sen = str(k) + " : " + str(v)
             self.record_logs(sen)
-        self.record_logs(record="\nCuMix")
+        self.record_logs(record="\nMixup")
         for key, value in default.items():
             senten = str(key) + " : " + str(value)
             self.record_logs(senten)

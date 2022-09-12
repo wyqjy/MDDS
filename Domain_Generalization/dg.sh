@@ -14,6 +14,11 @@ elif [ ${DATASET} == officehome ]; then
     D2=clipart
     D3=product
     D4=real_world
+elif [ ${DATASET} == vlcs ]; then
+    D1=CALTECH
+    D2=LABELME
+    D3=PASCAL
+    D4=SUN
 fi
 
 for SEED in $(seq 0 0)

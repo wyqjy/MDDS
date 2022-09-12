@@ -32,7 +32,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=32, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -60,7 +60,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='pacs', help="dataset")
+    parser.add_argument("--dataset", default='vlcs', help="dataset")
     parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
@@ -406,6 +406,15 @@ def main():
     # args.target = 'clipart'
     # args.source = ['real_world', 'clipart', 'product']
     # args.target = 'art'
+    # ---------------------------------------------
+    # args.source = ["LABELME", "PASCAL", "SUN"]
+    # args.target = "CALTECH"
+    # args.source = ["CALTECH", "PASCAL", "SUN"]
+    # args.target = "LABELME"
+    args.source = ["CALTECH", "LABELME", "SUN"]
+    args.target = "PASCAL"
+    # args.source = ["CALTECH", "LABELME", "PASCAL"]
+    # args.target = "SUN"
 
     print("Target domain: {}".format(args.target))
     seed = args.seed
@@ -416,6 +425,8 @@ def main():
         args.n_classes = 7
     elif args.dataset=='officehome':
         args.n_classes = 65
+    elif args.dataset == 'vlcs':
+        args.n_classes = 5
 
     trainer = Trainer(args, device)
     if not args.no_train:
