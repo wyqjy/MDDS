@@ -60,7 +60,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='vlcs', help="dataset")
+    parser.add_argument("--dataset", default='DomainNet', help="dataset")
     parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
@@ -411,10 +411,23 @@ def main():
     # args.target = "CALTECH"
     # args.source = ["CALTECH", "PASCAL", "SUN"]
     # args.target = "LABELME"
-    args.source = ["CALTECH", "LABELME", "SUN"]
-    args.target = "PASCAL"
+    # args.source = ["CALTECH", "LABELME", "SUN"]
+    # args.target = "PASCAL"
     # args.source = ["CALTECH", "LABELME", "PASCAL"]
     # args.target = "SUN"
+    # ---------------------------------------------
+    args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
+    args.target = 'clipart'
+    # args.source = ['clipart','sketch', 'real', 'infograph', 'painting']
+    # args.target = 'quickdraw'
+    # args.source = ['clipart', 'quickdraw', 'real', 'infograph', 'painting']
+    # args.target = 'sketch'
+    # args.source = ['clipart', 'quickdraw', 'sketch', 'infograph', 'painting']
+    # args.target = 'real'
+    # args.source = ['clipart', 'quickdraw', 'sketch', 'real', 'painting']
+    # args.target = 'infograph'
+    # args.source = ['clipart', 'quickdraw', 'sketch', 'real', 'infograph']
+    # args.target = 'painting'
 
     print("Target domain: {}".format(args.target))
     seed = args.seed
@@ -427,6 +440,8 @@ def main():
         args.n_classes = 65
     elif args.dataset == 'vlcs':
         args.n_classes = 5
+    elif args.dataset == 'DomainNet':
+        args.n_classes =345
 
     trainer = Trainer(args, device)
     if not args.no_train:

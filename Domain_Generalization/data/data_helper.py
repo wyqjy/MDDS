@@ -24,7 +24,8 @@ pacs_datasets = ["art_painting", "cartoon", "photo", "sketch"]
 office_datasets = ["amazon", "dslr", "webcam"]
 digits_datasets = [mnist, mnist, svhn, usps]
 office_home_datasets=["art", "clipart", "product", "real_world"]
-available_datasets = office_datasets + pacs_datasets + vlcs_datasets + digits_datasets +office_home_datasets
+DomainNet=['clipart', 'quickdraw', 'sketch', 'real', 'infograph', 'painting']
+available_datasets = office_datasets + pacs_datasets + vlcs_datasets + digits_datasets +office_home_datasets+DomainNet
 #office_paths = {dataset: "/home/enoon/data/images/office/%s" % dataset for dataset in office_datasets}
 #pacs_paths = {dataset: "/home/enoon/data/images/PACS/kfold/%s" % dataset for dataset in pacs_datasets}
 #vlcs_paths = {dataset: "/home/enoon/data/images/VLCS/%s/test" % dataset for dataset in pacs_datasets}
@@ -80,6 +81,8 @@ def get_train_dataloader(args, patches):
             txt_folder = 'officehome_split'
         elif args.dataset == 'vlcs':
             txt_folder = 'vlcs_split'
+        elif args.dataset == 'DomainNet':
+            txt_folder = 'DomainNet_split'
         name_train, labels_train = _dataset_info(join(dirname(__file__), txt_folder, '%s_train_kfold.txt' % dname))
         name_val, labels_val = _dataset_info(join(dirname(__file__), txt_folder, '%s_crossval_kfold.txt' % dname))
 
@@ -107,6 +110,8 @@ def get_val_dataloader(args, patches=False):
         txt_folder = 'officehome_split'
     elif args.dataset == 'vlcs':
         txt_folder = 'vlcs_split'
+    elif args.dataset == 'DomainNet':
+        txt_folder = 'DomainNet_split'
     names, labels = _dataset_info(join(dirname(__file__), txt_folder, '%s_test_kfold.txt' % args.target))
     img_tr = get_val_transformer(args)
     # img_tr = transforms.get_ms_test_transform()

@@ -183,6 +183,8 @@ class JigsawNewDataset(data.Dataset):
             self.data_path = '../../Data/office_home_dg'
         elif args.dataset == 'vlcs':
             self.data_path = '../../Data/VLCS'
+        elif args.dataset == 'DomainNet':
+            self.data_path = '../../Data/DomainNet'
 
         self.names = names      # name_train
         self.labels = labels    # labels_train
