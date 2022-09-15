@@ -32,7 +32,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=32, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -60,7 +60,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='DomainNet', help="dataset")
+    parser.add_argument("--dataset", default='pacs', help="dataset")
     parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
@@ -160,7 +160,7 @@ class CuMix:
         return torch.from_numpy(RG.beta(self.mixup_beta, self.mixup_beta, size=domains.shape[0])).float()
 
     def get_mixup_sample_and_ratio(self, data_bc, epoch, random=False, max_dis_index=None):
-        self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
+        self.mixup_beta = 0.6# min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
         self.mixup_domain = min(1.0, max((self.mixup_step * 2. - epoch) / self.mixup_step, 0.0))
         # if epoch>65:
         #     self.mixup_beta = 0.1
@@ -218,10 +218,10 @@ class Trainer:
             data, jig_l, class_l, d_idx = data.to(self.device), jig_l.to(self.device), class_l.to(self.device), d_idx.to(self.device)
             self.optimizer.zero_grad()
 
-            data_flip = torch.flip(data, (3,)).detach().clone()  #按照维度对输入进行翻转,类别保持不变
-            data = torch.cat((data, data_flip))   #原先的数据和翻转的数据进行拼接
-            class_l = torch.cat((class_l, class_l))  #原先的类别和翻转的类别进行拼接
-            d_idx = torch.cat((d_idx, d_idx))
+            # data_flip = torch.flip(data, (3,)).detach().clone()  #按照维度对输入进行翻转,类别保持不变
+            # data = torch.cat((data, data_flip))   #原先的数据和翻转的数据进行拼接
+            # class_l = torch.cat((class_l, class_l))  #原先的类别和翻转的类别进行拼接
+            # d_idx = torch.cat((d_idx, d_idx))
 
             class_logit, features = self.model(data, class_l, True, epoch, True, forward_feature=False)  #进行前向传播  forward   第三个参数True代表要进行RSC操作, 返回预测的类别  是否返回特征
 
@@ -229,8 +229,8 @@ class Trainer:
             class_loss = criterion(class_logit, class_l)  #计算交叉熵损失
             _, cls_pred = class_logit.max(dim=1)  #获取最大的预测类别
 
-
-
+            torch.save(features, 'tensor\\origin-features')
+            torch.save(d_idx, 'tensor\\origin-domain')
 
             '''  ----------  CuMix   feature ----------'''
 
@@ -241,6 +241,9 @@ class Trainer:
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
+            torch.save(mixup_features, 'tensor\\2mix-features')
+            # _, l2 = mixup_labels.max(dim=1)
+            # torch.save(l2, 'tensor\\2mix-label')
 
             # 四样本
             max_dis_index = max_distance_select(features=mixup_features)
@@ -248,6 +251,9 @@ class Trainer:
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
+            torch.save(mixup_features, 'tensor\\4mix-features')
+            # _, l4 = mixup_labels.max(dim=1)
+            # torch.save(l4, 'tensor\\4mix-label')
 
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
 
@@ -393,8 +399,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    # args.source = ['art_painting', 'photo', 'sketch']
-    # args.target = 'cartoon'
+    args.source = ['art_painting', 'photo', 'sketch']
+    args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
@@ -416,8 +422,8 @@ def main():
     # args.source = ["CALTECH", "LABELME", "PASCAL"]
     # args.target = "SUN"
     # ---------------------------------------------
-    args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
-    args.target = 'clipart'
+    # args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
+    # args.target = 'clipart'
     # args.source = ['clipart','sketch', 'real', 'infograph', 'painting']
     # args.target = 'quickdraw'
     # args.source = ['clipart', 'quickdraw', 'real', 'infograph', 'painting']
