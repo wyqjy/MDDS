@@ -441,7 +441,7 @@ def main():
     elif args.dataset == 'vlcs':
         args.n_classes = 5
     elif args.dataset == 'DomainNet':
-        args.n_classes =345
+        args.n_classes = 345
 
     trainer = Trainer(args, device)
     if not args.no_train:
