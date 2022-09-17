@@ -12,6 +12,7 @@ from optimizer.optimizer_helper import get_optim_and_scheduler
 from utils.Logger import Logger
 import numpy as np
 from models.resnet import resnet18, resnet50
+from models.alexnet import alexnet
 import datetime
 import time as time1
 import os
@@ -33,7 +34,7 @@ def get_args():
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
     parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
-    parser.add_argument("--image_size", type=int, default=222, help="Image size")
+    parser.add_argument("--image_size", type=int, default=224, help="Image size")  # digits32(Lenet)  vlcs (alex) 224  resnet222
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
     parser.add_argument("--max_scale", default=1.0, type=float, help="Maximum scale percent")
@@ -48,7 +49,7 @@ def get_args():
     parser.add_argument("--learning_rate", "-l", type=float, default=.001, help="Learning rate")
     parser.add_argument("--epochs", "-e", type=int, default=50, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
-    parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="resnet18")
+    parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="alexnet")
     parser.add_argument("--tf_logger", type=bool, default=True, help="If true will save tensorboard compatible logs")
     parser.add_argument("--val_size", type=float, default="0.1", help="Validation size (between 0 and 1)")
     parser.add_argument("--folder_name", default='test', help="Used by the logger to save logs")
@@ -60,7 +61,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='pacs', help="dataset")
+    parser.add_argument("--dataset", default='vlcs', help="dataset")
     parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
@@ -185,6 +186,8 @@ class Trainer:
             model = resnet18(pretrained=True, classes=args.n_classes)
         elif args.network == 'resnet50':
             model = resnet50(pretrained=True, classes=args.n_classes)
+        elif args.network == 'alexnet':
+            model = alexnet(pretrained=True, classes=args.n_classes)
         else:
             model = resnet18(pretrained=True, classes=args.n_classes)
         self.model = model.to(device)
@@ -399,8 +402,8 @@ def main():
     # args.target = 'photo'
     # args.source = ['art_painting', 'cartoon', 'photo']
     # args.target = 'sketch'
-    args.source = ['art_painting', 'photo', 'sketch']
-    args.target = 'cartoon'
+    # args.source = ['art_painting', 'photo', 'sketch']
+    # args.target = 'cartoon'
     # args.source = ['photo', 'cartoon', 'sketch']
     # args.target = 'art_painting'
     # --------------------------------------------
@@ -417,8 +420,8 @@ def main():
     # args.target = "CALTECH"
     # args.source = ["CALTECH", "PASCAL", "SUN"]
     # args.target = "LABELME"
-    # args.source = ["CALTECH", "LABELME", "SUN"]
-    # args.target = "PASCAL"
+    args.source = ["CALTECH", "LABELME", "SUN"]
+    args.target = "PASCAL"
     # args.source = ["CALTECH", "LABELME", "PASCAL"]
     # args.target = "SUN"
     # ---------------------------------------------

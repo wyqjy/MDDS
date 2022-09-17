@@ -87,128 +87,15 @@ class ResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-        feature = x
-
-        '''RSC的核心部分'''
-        flag = False
-        if flag:
-            # print('========')  #表示没有进入RSC
-            interval = 10
-            if epoch % interval == 0:
-                self.pecent = 1.0 / 10 + (epoch / interval) / 10  #每过10个epoch就把操作样本的比例加上0.2 * 2.0
-
-            self.eval()  #不启用 BatchNormalization 和 Dropout，保证BN和dropout不发生变化，pytorch框架会自动把BN和Dropout固定住，不会取平均，而是用训练好的值，不然的话，一旦test的batch_size过小，很容易就会被BN层影响结果
-            x_new = x.clone().detach()  #clone()返回值是一个中间变量，支持梯度回溯。detach()操作后tensor与原始的tensor共享数据内存，它改变后原始的数据也相应的改变
-            x_new = Variable(x_new.data, requires_grad=True)  #变量   可以反向传播  pytorch都是由tensor计算的，而tensor里面的参数是variable的形式
-            x_new_view = self.avgpool(x_new)
-            x_new_view = x_new_view.view(x_new_view.size(0), -1)   #view返回的tensor和原来的tensor还是共享data的，但还是一个新的tensor，两者的内存地址并不一致
-            output = self.class_classifier(x_new_view)   #获得正常计算下的预测类别
-            class_num = output.shape[1]   #预测的数量 7     output.shape=[128,7]  代表着128个样本 7个类别
-            index = gt    #groundtruth  真实标签
-            num_rois = x_new.shape[0]  #128  输出的尺寸 128*512*7*7      128=batchsize*2  传入的数据做了一次concat
-            num_channel = x_new.shape[1]  #512
-            H = x_new.shape[2]   #7
-            HW = x_new.shape[2] * x_new.shape[3]  #49
-
-            one_hot = torch.zeros((1), dtype=torch.float32).cuda() #
-            one_hot = Variable(one_hot, requires_grad=False)
-            sp_i = torch.ones([2, num_rois]).long()  #[2*128]
-            sp_i[0, :] = torch.arange(num_rois)      #从0-127
-            sp_i[1, :] = index                       #和索引对应的真实值 标签
-            sp_v = torch.ones([num_rois])
-            one_hot_sparse = torch.sparse.FloatTensor(sp_i, sp_v, torch.Size([num_rois, class_num])).to_dense().cuda()  #稀疏张量
-            one_hot_sparse = Variable(one_hot_sparse, requires_grad=False)
-            one_hot = torch.sum(output * one_hot_sparse)   #预测值和真实值得乘积
-            self.zero_grad()  #梯度置0
-            one_hot.backward()  #求导
-
-            grads_val = x_new.grad.clone().detach()  #获取梯度值
-            grad_channel_mean = torch.mean(grads_val.view(num_rois, num_channel, -1), dim=2)  #按列求平均值  从通道的维度上
-            channel_mean = grad_channel_mean
-            grad_channel_mean = grad_channel_mean.view(num_rois, num_channel, 1, 1)
-
-            spatial_mean = torch.sum(x_new * grad_channel_mean, 1)
-            spatial_mean = spatial_mean.view(num_rois, HW)  #128,49
-            self.zero_grad()
-
-            choose_one = random.randint(0, 9)   #选择空间和通道的概率  大概各1/2的概率
-            if choose_one <= 4:
-                # ---------------------------- spatial -----------------------
-                spatial_drop_num = math.ceil(HW * 1 / 3.0)    #ceil函数返回数字的上整数   49/3向上取整 17
-
-                ''' ********** 改进001 *********'''
-                # put_fe = 3   #放开的前几名特征数量
-                # if (epoch+1)%10==0:
-                #     put_fe = put_fe - 1
-                # upper_boundary = torch.sort(spatial_mean, dim=1, descending=True)[0][:, put_fe]  #001
-                # upper_boundary = upper_boundary.view(num_rois, 1).expand(num_rois, 49)      #001
-
-                th18_mask_value = torch.sort(spatial_mean, dim=1, descending=True)[0][:, spatial_drop_num]  #+put_fe 按行排序  取第17大的值  [128]   +put_fe新改的001
-                th18_mask_value = th18_mask_value.view(num_rois, 1).expand(num_rois, 49)      #[128 49]
-
-                mask_all_cuda = torch.where(spatial_mean > th18_mask_value, torch.zeros(spatial_mean.shape).cuda(),
-                                            torch.ones(spatial_mean.shape).cuda())
-                # mask_all_cuda = torch.where(spatial_mean > upper_boundary, torch.ones(spatial_mean.shape).cuda(),    #001  把排名最高的put_fe再放出来
-                #                             mask_all_cuda)
-
-                mask_all = mask_all_cuda.reshape(num_rois, H, H).view(num_rois, 1, H, H)
-            else:
-                # -------------------------- channel ----------------------------
-                vector_thresh_percent = math.ceil(num_channel * 1 / 3.2)  #160
-
-                '''********** 改进001 *********'''
-                # put_fe = 27
-                # if (epoch+1)%10==0:
-                #     put_fe = put_fe - 9
-                # upper_boundary = torch.sort(channel_mean, dim=1, descending=True)[0][:, put_fe]    #001
-                # upper_boundary = upper_boundary.view(num_rois, 1).expand(num_rois, num_channel)    #001
-
-                vector_thresh_value = torch.sort(channel_mean, dim=1, descending=True)[0][:, vector_thresh_percent]  #+put_fe改
-                vector_thresh_value = vector_thresh_value.view(num_rois, 1).expand(num_rois, num_channel)
-                vector = torch.where(channel_mean > vector_thresh_value, torch.zeros(channel_mean.shape).cuda(),
-                                     torch.ones(channel_mean.shape).cuda())
-                # vector = torch.where(channel_mean > upper_boundary, torch.ones(channel_mean.shape).cuda(),  #001
-                #                      vector)
-
-                mask_all = vector.view(num_rois, num_channel, 1, 1)
-
-            # ----------------------------------- batch ----------------------------------------
-            '''基于交叉熵损失的 来确定要把RSC应用在哪些batch上的样本中'''
-            cls_prob_before = F.softmax(output, dim=1)  #之前预测值的softmax
-            x_new_view_after = x_new * mask_all   #利用公式2,先算一下沉默之后的特征表示z，但这里并不是最终的特征表示，是用来计算batch里的哪些样本需要RSC的
-            x_new_view_after = self.avgpool(x_new_view_after)
-            x_new_view_after = x_new_view_after.view(x_new_view_after.size(0), -1)
-            x_new_view_after = self.class_classifier(x_new_view_after)
-            cls_prob_after = F.softmax(x_new_view_after, dim=1)  #沉默之后的预测值的softmax
-
-            sp_i = torch.ones([2, num_rois]).long()
-            sp_i[0, :] = torch.arange(num_rois)
-            sp_i[1, :] = index
-            sp_v = torch.ones([num_rois])
-            one_hot_sparse = torch.sparse.FloatTensor(sp_i, sp_v, torch.Size([num_rois, class_num])).to_dense().cuda()
-            before_vector = torch.sum(one_hot_sparse * cls_prob_before, dim=1)
-            after_vector = torch.sum(one_hot_sparse * cls_prob_after, dim=1)
-            change_vector = before_vector - after_vector - 0.0001
-            change_vector = torch.where(change_vector > 0, change_vector, torch.zeros(change_vector.shape).cuda())
-            th_fg_value = torch.sort(change_vector, dim=0, descending=True)[0][int(round(float(num_rois) * self.pecent))]  #128*percent
-            drop_index_fg = change_vector.gt(th_fg_value).long()
-            ignore_index_fg = 1 - drop_index_fg
-            not_01_ignore_index_fg = ignore_index_fg.nonzero()[:, 0]
-            mask_all[not_01_ignore_index_fg.long(), :] = 1
-
-            self.train()
-            mask_all = Variable(mask_all, requires_grad=True)
-            x = x * mask_all    #公式2  特征表示z乘以掩码向量m
+        # feature = x
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         if return_features:
-            feature = self.avgpool(feature)
-            feature = feature.view(feature.size(0), -1)
+            # feature = self.avgpool(feature)
+            # feature = feature.view(feature.size(0), -1)
             # feature = x
-            if random.random() > 0.5:    # 以0.5的概率返回原始特征还是操作后的rsc特征
-                return self.class_classifier(feature), x
-            return self.class_classifier(feature), feature
+            return self.class_classifier(x), x
         return self.class_classifier(x)
 
 

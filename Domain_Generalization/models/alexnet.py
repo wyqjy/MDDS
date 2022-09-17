@@ -44,9 +44,18 @@ class AlexNet(nn.Module):
             nn.Linear(4096, num_classes),
         )
 
-    def forward(self, x):
+    def is_patch_based(self):
+        return False
+
+    def forward(self, x, gt=None, flag=None, epoch=None, return_features=False, forward_feature=False):
+        if forward_feature:
+            return self.classifier(x)
+
         x = self.features(x)
         x = x.view(x.size(0), 256 * 6 * 6)
+        if return_features:
+            return self.classifier(x), x
+
         x = self.classifier(x)
         return x
 
@@ -58,9 +67,9 @@ def alexnet(classes, pretrained=False):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = AlexNet(classes, True)
+    model = AlexNet(num_classes=1000, dropout=True)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['alexnet']))
+        model.load_state_dict(model_zoo.load_url(model_urls['alexnet']), strict=False)
 
     model.classifier[-1] = nn.Linear(4096, classes)
     nn.init.xavier_uniform_(model.classifier[-1].weight, .1)
