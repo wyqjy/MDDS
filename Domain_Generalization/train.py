@@ -47,7 +47,7 @@ def get_args():
     parser.add_argument("--limit_target", default=None, type=int,
                         help="If set, it will limit the number of testing samples")
     parser.add_argument("--learning_rate", "-l", type=float, default=.001, help="Learning rate")
-    parser.add_argument("--epochs", "-e", type=int, default=50, help="Number of epochs")  #默认20
+    parser.add_argument("--epochs", "-e", type=int, default=30, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
     parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="alexnet")
     parser.add_argument("--tf_logger", type=bool, default=True, help="If true will save tensorboard compatible logs")
@@ -356,8 +356,8 @@ class Trainer:
 
         for self.current_epoch in range(self.args.epochs):
             # print('-----',self.current_epoch)
-            self.lr_Adjust(self.current_epoch)
-            # self.scheduler.step()
+            # self.lr_Adjust(self.current_epoch)
+            self.scheduler.step()
             self.logger.new_epoch(self.scheduler.get_lr())
             # for n, v in enumerate(self.scheduler.get_lr()):  #其实里面一直只有一个值
             #     writer.add_scalar('Learning rate', v, self.current_epoch)  #画学习率的图

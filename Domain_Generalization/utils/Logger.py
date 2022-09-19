@@ -67,10 +67,11 @@ class Logger():
         self.total = 0
 
     def log_test(self, phase, accuracies, model, args):   # log test val
+        record_test = "Accuracies on %s: " % phase + ", ".join(
+            ["%s : %.2f" % (k, v * 100) for k, v in accuracies.items()])
         if phase == "test":
             self.save_model(model, accuracies["class"], args)
-        record_test = "Accuracies on %s: " % phase + ", ".join(["%s : %.2f" % (k, v * 100) for k, v in accuracies.items()])
-        self.record_logs(record_test)
+            self.record_logs(record_test)
         print(record_test)
         if self.tf_logger:
             for k, v in accuracies.items(): self.tf_logger.scalar_summary("%s/acc_%s" % (phase, k), v, self.current_iter)
