@@ -269,7 +269,7 @@ class Trainer:
         filefolder = "output/" + str(self.args.dataset) + '/' + 'seed'+str(self.args.seed) + '/TXT'
         if not (os.path.exists(filefolder)):
             os.makedirs(filefolder)
-        filename = filefolder + '/' + str(self.args.target) + '+RSC+lr_manul+CuMix_+epoch80' + '_'+ str(time) + '.txt'
+        filename = filefolder + '/' + str(self.args.target) + '+epochs' + str(self.args.epochs) + '_' + str(time) + '.txt'
         print(filename)
         file = open(filename, mode='w')
         record_best_test = 'best test' + str(test_res.max())+'   '+' local in'+str(idx_best_test+1)+'epoch'
