@@ -13,6 +13,7 @@ from utils.Logger import Logger
 import numpy as np
 from models.resnet import resnet18, resnet50
 from models.alexnet import alexnet
+from models.mixup import Mixup
 import datetime
 import time as time1
 import os
@@ -25,8 +26,7 @@ from distance.max_select import max_distance_select
 from torch.utils.tensorboard import SummaryWriter
 # writer = SummaryWriter('./path/to/log')
 
-CE = nn.CrossEntropyLoss()
-RG = np.random.default_rng()
+
 
 def get_args():
     parser = argparse.ArgumentParser(description="Script to launch jigsaw training",
@@ -67,117 +67,6 @@ def get_args():
     return parser.parse_args()
 
 
-# Standard mix
-def std_mix(x,indeces,ratio):
-    #print(x.size(),' ',ratio.size(),' ',indeces.size())
-
-    return ratio*x + (1.-ratio)*x[indeces]
-
-# CE on mixed labels, represented as vectors
-def manual_CE(predictions, labels):
-    loss = -torch.mean(torch.sum(labels * torch.log_softmax(predictions,dim=1),dim=1))
-    return loss
-
-def swap(xs, a, b):
-    xs[a], xs[b] = xs[b], xs[a]
-
-def derange(xs):
-    x_new = [] + xs
-    for a in range(1, len(x_new)):
-        b = RG.choice(range(0, a))
-        swap(x_new, a, b)
-    return x_new
-
-class CuMix:
-    def __init__(self, configs, args):
-        self.mixup_w = configs['mixup_img_w']
-        self.mixup_feat_w = configs['mixup_feat_w']   # 特征级别的mixup的loss的权重比
-
-        self.max_beta = configs['mixup_beta']
-        self.mixup_beta = 0.0
-        self.mixup_step = configs['mixup_step']
-        self.mixup_domain = 0
-
-        self.step = configs['step']
-        # self.batch_size = configs['batch_size']
-        # self.lr = configs['lr']
-        # self.nesterov = configs['nesterov']
-        # self.decay = configs['weight_decay']
-        # self.freeze_bn = configs['freeze_bn']
-
-        # input_dim = configs['input_dim']
-        self.semantic_w = configs['semantic_w']
-
-        self.seen_classes = args.n_classes
-
-        self.mixup_criterion = manual_CE
-        self.device = "cuda"
-
-
-    # Create one hot labels
-    def create_one_hot(self, y):
-        y_onehot = torch.LongTensor(y.size(0), self.seen_classes).to(self.device) # .size(0)
-        y_onehot.zero_()
-        y_onehot.scatter_(1, y.view(-1, 1), 1)
-        return y_onehot
-
-    def get_random_sample_mixup(self, domains):
-        '''  随机选   '''
-        res = torch.randperm(domains.shape[0])
-        return res
-
-    def get_sample_mixup(self, domains, max_dis_index=None):
-
-        group_nums = 16
-        min_group = int(domains.shape[0]/group_nums)
-        index = torch.IntTensor()
-        for i in range(group_nums):
-            min_index = torch.randperm(int(min_group))
-            index = torch.cat((index, min_index+max_dis_index[i]*int(min_group)), dim=0)
-        # print(index)
-        return index
-
-
-
-        ''' 每个batch里都有相等的域样本数 不好用'''
-        # doms = list(range(len(torch.unique(domains))))  # [0,1,2]    挑出独立不重复的元素
-        # c = domains.size(0)
-        # bs1 = domains.size(0) // len(doms)  # 一个batch里一个域要包含的样本数量
-        # bs = bs1 // 2
-        # selected = derange(doms)  # 重新排列领域标号
-        # permuted_across_dom = torch.cat([(torch.randperm(bs) + selected[i] * bs) for i in range(len(doms))])
-        # permuted_within_dom = torch.cat([(torch.randperm(bs) + i * bs) for i in range(len(doms))])
-        # ratio_within_dom = torch.from_numpy(RG.binomial(1, self.mixup_domain, size=domains.size(0)//2))
-        # indeces = ratio_within_dom * permuted_within_dom + (1. - ratio_within_dom) * permuted_across_dom
-        #
-        # indeces_la = indeces.add(domains.size(0)//2)
-        # indeces = torch.cat((indeces, indeces_la))
-        # return indeces.long()
-
-
-    # Get ratio to perform mixup
-    def get_ratio_mixup(self, domains):
-        # print(domains.shape[0], ' ', self.mixup_beta)
-        return torch.from_numpy(RG.beta(self.mixup_beta, self.mixup_beta, size=domains.shape[0])).float()
-
-    def get_mixup_sample_and_ratio(self, data_bc, epoch, random=False, max_dis_index=None):
-        self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
-        self.mixup_domain = min(1.0, max((self.mixup_step * 2. - epoch) / self.mixup_step, 0.0))
-        # if epoch>65:
-        #     self.mixup_beta = 0.1
-        if random:
-            return self.get_random_sample_mixup(data_bc), self.get_ratio_mixup(data_bc)
-        return self.get_sample_mixup(data_bc, max_dis_index=max_dis_index), self.get_ratio_mixup(data_bc)
-
-    # Get mixed inputs/labels
-    def get_mixed_input_labels(self, input, labels, indeces, ratios, dims=2):
-        if dims==4:
-            return std_mix(input, indeces, ratios.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)), std_mix(labels, indeces, ratios.unsqueeze(-1))
-        else:    # dims=2 表示传回的是两个东西， 一个是数据，一个是标签
-            return std_mix(input, indeces, ratios.unsqueeze(-1)), std_mix(labels, indeces, ratios.unsqueeze(-1))
-
-
-
 class Trainer:
     def __init__(self, args, device):
         self.args = args
@@ -211,11 +100,11 @@ class Trainer:
         torch.set_num_threads(4)
         self.dec_lr = 0.99
 
-    def _do_epoch(self, epoch=None, CuMix_train=None):
+    def _do_epoch(self, epoch=None, Mix_train=None):
         criterion = nn.CrossEntropyLoss()
         self.model.train()
         print('-'*60)
-        print('----- beta:', CuMix_train.mixup_beta)
+        print('----- beta:', Mix_train.mixup_beta)
 
         for it, ((data, jig_l, class_l), d_idx) in enumerate(self.source_loader):
             data, jig_l, class_l, d_idx = data.to(self.device), jig_l.to(self.device), class_l.to(self.device), d_idx.to(self.device)
@@ -239,10 +128,10 @@ class Trainer:
 
             max_dis_index = max_distance_select(features=features)
 
-            one_hot_labels = CuMix_train.create_one_hot(class_l)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
+            one_hot_labels = Mix_train.create_one_hot(class_l)
+            mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
-            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
+            mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
             # torch.save(mixup_features, 'tensor\\2mix-features')
             # _, l2 = mixup_labels.max(dim=1)
@@ -250,9 +139,9 @@ class Trainer:
 
             # 四样本
             max_dis_index = max_distance_select(features=mixup_features)
-            mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
+            mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
-            mixup_features, mixup_labels = CuMix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+            mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
             # torch.save(mixup_features, 'tensor\\4mix-features')
             # _, l4 = mixup_labels.max(dim=1)
@@ -260,15 +149,15 @@ class Trainer:
 
             mixup_features_predictions = self.model(mixup_features, mixup_labels, False, epoch, False, forward_feature=True)  # 直接传进分类器层
 
-            mixup_feature_loss = CuMix_train.mixup_criterion(mixup_features_predictions, mixup_labels)
-            loss = CuMix_train.semantic_w*class_loss + CuMix_train.mixup_feat_w*mixup_feature_loss
+            mixup_feature_loss = Mix_train.mixup_criterion(mixup_features_predictions, mixup_labels)
+            loss = Mix_train.semantic_w*class_loss + Mix_train.mixup_feat_w*mixup_feature_loss
 
-            '''--------  CuMix  img --------'''
-            # mix_indeces, mix_ratios = CuMix_train.get_mixup_sample_and_ratio(d_idx, epoch)
-            # mixup_inputs, mixup_labels = CuMix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
+            '''--------  Mix  img --------'''
+            # mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch)
+            # mixup_inputs, mixup_labels = Mix_train.get_mixed_input_labels(data, one_hot_labels, mix_indeces, mix_ratios.to(self.device), dims=4)
             # mixup_img_predictions = self.model(mixup_inputs, mixup_labels, flag=False, return_features=False, forward_feature=False)
-            # mixup_img_loss = CuMix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
-            # loss = loss + CuMix_train.mixup_w*mixup_img_loss
+            # mixup_img_loss = Mix_train.mixup_criterion(mixup_img_predictions, mixup_labels)
+            # loss = loss + Mix_train.mixup_w*mixup_img_loss
 
 
             # loss = class_loss
@@ -341,17 +230,17 @@ class Trainer:
 
     def do_training(self):
 
-        CuMix_config_file = "configs/dg.json"
-        with open(CuMix_config_file) as json_file:
-            CuMix_configs = json.load(json_file)
+        Mix_config_file = "configs/dg.json"
+        with open(Mix_config_file) as json_file:
+            Mix_configs = json.load(json_file)
 
-        CuMix_train = CuMix(CuMix_configs, self.args)
+        Mix_train = Mixup(Mix_configs, self.args)
         # print(CuMix_train.semantic_w)
         # print(CuMix_train.mixup_feat_w)
         # print(CuMix_train.mixup_w)
 
         self.logger = Logger(self.args, update_frequency=30)
-        self.logger.record_default(CuMix_configs)
+        self.logger.record_default(Mix_configs)
         self.results = {"val": torch.zeros(self.args.epochs), "test": torch.zeros(self.args.epochs)}
 
         for self.current_epoch in range(self.args.epochs):
@@ -361,7 +250,7 @@ class Trainer:
             self.logger.new_epoch(self.scheduler.get_lr())
             # for n, v in enumerate(self.scheduler.get_lr()):  #其实里面一直只有一个值
             #     writer.add_scalar('Learning rate', v, self.current_epoch)  #画学习率的图
-            self._do_epoch(self.current_epoch, CuMix_train)
+            self._do_epoch(self.current_epoch, Mix_train)
 
         # writer.close() #新加的
 
