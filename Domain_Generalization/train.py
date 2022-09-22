@@ -309,8 +309,8 @@ def main():
     # args.target = "CALTECH"
     # args.source = ["CALTECH", "PASCAL", "SUN"]
     # args.target = "LABELME"
-    args.source = ["CALTECH", "LABELME", "SUN"]
-    args.target = "PASCAL"
+    # args.source = ["CALTECH", "LABELME", "SUN"]
+    # args.target = "PASCAL"
     # args.source = ["CALTECH", "LABELME", "PASCAL"]
     # args.target = "SUN"
     # ---------------------------------------------
