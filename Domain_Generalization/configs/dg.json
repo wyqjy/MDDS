@@ -3,7 +3,7 @@
   "iters_per_epoch": 100,
 
   "mixup_img_w": 0,
-  "mixup_feat_w": 3,
+  "mixup_feat_w": 3.0,
   "mixup_step": 10,
   "mixup_beta": 0.6,
 

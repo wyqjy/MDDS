@@ -99,7 +99,10 @@ class Mixup:
         return torch.from_numpy(RG.beta(self.mixup_beta, self.mixup_beta, size=domains.shape[0])).float()
 
     def get_mixup_sample_and_ratio(self, data_bc, epoch, random=False, max_dis_index=None):
-        self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
+        # self.mixup_beta = min(self.max_beta, max(self.max_beta * (epoch) / self.mixup_step, 0.1))
+        import math
+        self.mixup_beta = min(self.max_beta, math.pow(1.1, epoch - 20))
+
         self.mixup_domain = min(1.0, max((self.mixup_step * 2. - epoch) / self.mixup_step, 0.0))
         # if epoch>65:
         #     self.mixup_beta = 0.1
