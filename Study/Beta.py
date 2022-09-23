@@ -35,14 +35,14 @@ def fun(a):
     y_pow = []
     for epoch in range(30):
         ''' 指数函数 左侧部分<1  '''
-        pow_beta = min(max_beta, math.pow(a, epoch-30))  # 加不加最小值0.1待定
+        pow_beta = min(max_beta, math.pow(a, epoch-20))  # 加不加最小值0.1待定
         y_pow.append(pow_beta)
-        print(epoch, ':', pow_beta, ' '*10, math.pow(a, epoch-30))
+        print(epoch, ':', pow_beta, ' '*10, math.pow(a, epoch-20))
     return y_pow
 
 vis(x, y)
 a=1.1  # 从1.1-1.5中取值
-for i in range(5):
+for i in range(1):
     y_pow = fun(a)
     a+=0.1
     vis(x, y_pow)
