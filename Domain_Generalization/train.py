@@ -138,10 +138,10 @@ class Trainer:
             # torch.save(l2, 'tensor\\2mix-label')
 
             # 四样本
-            max_dis_index = max_distance_select(features=mixup_features)
-            mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=True, max_dis_index=max_dis_index)
-            mix_ratios = mix_ratios.to(self.device)
-            mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+            # max_dis_index = max_distance_select(features=mixup_features)
+            # mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=True, max_dis_index=max_dis_index)
+            # mix_ratios = mix_ratios.to(self.device)
+            # mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
             # torch.save(mixup_features, 'tensor\\4mix-features')
             # _, l4 = mixup_labels.max(dim=1)
