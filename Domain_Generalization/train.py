@@ -33,7 +33,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=128, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")  # digits32(Lenet)  vlcs (alex) 224  resnet222
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -61,7 +61,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='DomainNet', help="dataset")
+    parser.add_argument("--dataset", default='TerraIncognita', help="dataset")
     parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
@@ -314,8 +314,8 @@ def main():
     # args.source = ["CALTECH", "LABELME", "PASCAL"]
     # args.target = "SUN"
     # ---------------------------------------------
-    args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
-    args.target = 'clipart'
+    # args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
+    # args.target = 'clipart'
     # args.source = ['clipart','sketch', 'real', 'infograph', 'painting']
     # args.target = 'quickdraw'
     # args.source = ['clipart', 'quickdraw', 'real', 'infograph', 'painting']
@@ -326,6 +326,15 @@ def main():
     # args.target = 'infograph'
     # args.source = ['clipart', 'quickdraw', 'sketch', 'real', 'infograph']
     # args.target = 'painting'
+    # ---------------------------------------------
+    # args.source = ["L38", "L43", "L46"]
+    # args.target = "L100"
+    # args.source = ["L100", "L43", "L46"]
+    # args.target = "L38"
+    # args.source = ["L100", "L38", "L46"]
+    # args.target = "L43"
+    # args.source = ["L100", "L38", "L43"]
+    # args.target = "L46"
 
     print("Target domain: {}".format(args.target))
     seed = args.seed
@@ -340,6 +349,8 @@ def main():
         args.n_classes = 5
     elif args.dataset == 'DomainNet':
         args.n_classes = 345
+    elif args.dataset == 'TerraIncognita':
+        args.n_classes = 10
 
     trainer = Trainer(args, device)
     if not args.no_train:
