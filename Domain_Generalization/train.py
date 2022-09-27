@@ -33,7 +33,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
-    parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
+    parser.add_argument("--batch_size", "-b", type=int, default=128, help="Batch size")  #受内存限制 改为32
     parser.add_argument("--image_size", type=int, default=222, help="Image size")  # digits32(Lenet)  vlcs (alex) 224  resnet222
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
@@ -61,7 +61,7 @@ def get_args():
     parser.add_argument("--nesterov", default=False, type=bool, help="Use nesterov")
 
     parser.add_argument("--no_train", default=False, type=bool, help="only test")
-    parser.add_argument("--dataset", default='vlcs', help="dataset")
+    parser.add_argument("--dataset", default='DomainNet', help="dataset")
     parser.add_argument("--seed", type=int, default=0, help="seed")
 
     return parser.parse_args()
@@ -129,7 +129,7 @@ class Trainer:
             max_dis_index = max_distance_select(features=features)
 
             one_hot_labels = Mix_train.create_one_hot(class_l)
-            mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=True, max_dis_index=max_dis_index)
+            mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
             mix_ratios = mix_ratios.to(self.device)
             mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(features, one_hot_labels, mix_indeces, mix_ratios)
 
@@ -138,10 +138,10 @@ class Trainer:
             # torch.save(l2, 'tensor\\2mix-label')
 
             # 四样本
-            # max_dis_index = max_distance_select(features=mixup_features)
-            # mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=True, max_dis_index=max_dis_index)
-            # mix_ratios = mix_ratios.to(self.device)
-            # mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
+            max_dis_index = max_distance_select(features=mixup_features)
+            mix_indeces, mix_ratios = Mix_train.get_mixup_sample_and_ratio(d_idx, epoch, random=False, max_dis_index=max_dis_index)
+            mix_ratios = mix_ratios.to(self.device)
+            mixup_features, mixup_labels = Mix_train.get_mixed_input_labels(mixup_features, mixup_labels, mix_indeces, mix_ratios)
 
             # torch.save(mixup_features, 'tensor\\4mix-features')
             # _, l4 = mixup_labels.max(dim=1)
@@ -314,8 +314,8 @@ def main():
     # args.source = ["CALTECH", "LABELME", "PASCAL"]
     # args.target = "SUN"
     # ---------------------------------------------
-    # args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
-    # args.target = 'clipart'
+    args.source = ['quickdraw', 'sketch', 'real', 'infograph', 'painting']
+    args.target = 'clipart'
     # args.source = ['clipart','sketch', 'real', 'infograph', 'painting']
     # args.target = 'quickdraw'
     # args.source = ['clipart', 'quickdraw', 'real', 'infograph', 'painting']
