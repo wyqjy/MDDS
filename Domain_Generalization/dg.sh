@@ -19,6 +19,11 @@ elif [ ${DATASET} == vlcs ]; then
     D2=LABELME
     D3=PASCAL
     D4=SUN
+elif [ ${DATASET} == TerraIncognita ]; then
+    D1=L100
+    D2=L38
+    D3=L43
+    D4=L46
 fi
 
 for SEED in $(seq 0 0)
