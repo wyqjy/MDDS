@@ -34,7 +34,7 @@ def get_args():
     parser.add_argument("--source", choices=available_datasets, help="Source", nargs='+')
     parser.add_argument("--target", choices=available_datasets, help="Target")
     parser.add_argument("--batch_size", "-b", type=int, default=64, help="Batch size")  #受内存限制 改为32
-    parser.add_argument("--image_size", type=int, default=222, help="Image size")  # digits32(Lenet)  vlcs (alex) 224  resnet222
+    parser.add_argument("--image_size", type=int, default=224, help="Image size")  # digits32(Lenet)  vlcs (alex) 224  resnet222
     # data aug stuff
     parser.add_argument("--min_scale", default=0.8, type=float, help="Minimum scale percent")
     parser.add_argument("--max_scale", default=1.0, type=float, help="Maximum scale percent")
