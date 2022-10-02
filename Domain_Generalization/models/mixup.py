@@ -66,7 +66,7 @@ class Mixup:
 
     def get_sample_mixup(self, domains, max_dis_index=None):
 
-        group_nums = 16
+        group_nums = 8
         min_group = int(domains.shape[0]/group_nums)
         index = torch.IntTensor()
         for i in range(group_nums):
