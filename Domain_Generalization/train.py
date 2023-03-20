@@ -46,7 +46,7 @@ def get_args():
                         help="If set, it will limit the number of training samples")
     parser.add_argument("--limit_target", default=None, type=int,
                         help="If set, it will limit the number of testing samples")
-    parser.add_argument("--learning_rate", "-l", type=float, default=.004, help="Learning rate")
+    parser.add_argument("--learning_rate", "-l", type=float, default=.001, help="Learning rate")
     parser.add_argument("--epochs", "-e", type=int, default=30, help="Number of epochs")  #默认20
     parser.add_argument("--n_classes", "-c", type=int, default=7, help="Number of classes")
     parser.add_argument("--network", choices=model_factory.nets_map.keys(), help="Which network to use", default="resnet50")

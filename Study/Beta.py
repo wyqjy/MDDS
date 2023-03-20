@@ -33,12 +33,12 @@ def orgin():
         # print(epoch, ' : ', mixup_beta)
 
 
-def fun(a):
+def fun(max_beta, a, x):
     x_pow = []
     y_pow = []
     for epoch in range(30):
         ''' 指数函数 左侧部分<1  '''
-        pow_beta = min(max_beta, math.pow(a, epoch-20))  # 加不加最小值0.1待定
+        pow_beta = min(max_beta, math.pow(a, epoch-x))  # 加不加最小值0.1待定
         y_pow.append(pow_beta)
         # print(epoch, ':', pow_beta, ' '*10, math.pow(a, epoch-20))
     return y_pow
@@ -48,23 +48,25 @@ def lamuda():
     print(RG.beta(max_beta, max_beta, size=10))
     print(torch.from_numpy(RG.beta(max_beta, max_beta, size=10)).float())
 
-# orgin()
-# vis(x, y)
-# fig, ax = plt.subplots()
-# a=1.1  # 从1.1-1.5中取值
-# for i in range(5):
-#     y_pow = fun(a)
-#     ax.plot(x, y_pow, label='a='+str(a))
-#     ax.legend()
-#     a += 0.1
-#     a = round(a, 1)
-#     print(a)
-#     # vis(x, y_pow)
-# ax.set_xlabel('epoch')
-# ax.set_ylabel('alpha')
-# # plt.savefig('Beta 参数变化 a.jpg')
-# plt.show()
-# # lamuda()
+orgin()
+vis(x, y)
+fig, ax = plt.subplots()
+a=1.2  # 从1.1-1.5中取值
+max_beta = 0.6
+xx = 10
+for i in range(4):
+    y_pow = fun(max_beta, a, xx)
+    ax.plot(x, y_pow, label='x='+str(xx))
+    ax.legend()
+    xx += 5
+    xx = round(xx, 1)
+    print(xx)
+    # vis(x, y_pow)
+ax.set_xlabel('epoch')
+ax.set_ylabel('alpha')
+plt.savefig('Beta 参数变化 x.jpg')
+plt.show()
+# lamuda()
 
 
 def Be():
@@ -101,4 +103,4 @@ def Be():
     plt.savefig('Beta分布.jpg')
     plot.show()
 
-Be()
+# Be()
